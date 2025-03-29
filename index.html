@@ -15,12 +15,27 @@
         font-family: Arial, sans-serif;
         margin: 20px;
       }
+      /* Top container: source image on left, room preview on right */
+      #topContainer {
+        display: flex;
+        gap: 20px;
+        align-items: flex-start;
+      }
+      #sourceContainer,
+      #roomPreviewContainer {
+        flex: 1;
+      }
       #imagePreview {
         max-width: 100%;
-        max-height: 500px;
-        display: none;
+        max-height: 400px;
+        border: 1px solid #ccc;
+        display: block;
         margin-top: 10px;
       }
+      #roomPreviewCanvas {
+        border: 1px solid #ccc;
+      }
+      /* Tile table */
       #tileTable {
         margin-top: 20px;
         border-collapse: collapse;
@@ -41,60 +56,52 @@
         max-width: 100%;
         max-height: 100%;
       }
-      /* Room Preview Canvas */
-      #roomPreviewCanvas {
-        margin-top: 20px;
-        border: 1px solid #ccc;
-      }
-      /* Modal styles */
-      #cropModal {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.8);
-        display: none;
-        justify-content: center;
-        align-items: center;
-        z-index: 1000;
-      }
-      #cropContainer {
-        background: #fff;
-        padding: 10px;
-        max-width: 90%;
-        max-height: 90%;
-        overflow: auto;
-        position: relative;
-      }
-      #cropContainer img {
-        max-width: 100%;
-      }
-      #scaleSlider {
-        width: 100%;
-      }
-      #modalButtons {
+      /* Nudge controls appear under the sample image when in crop mode */
+      #nudgeControls {
         margin-top: 10px;
-        text-align: right;
+        display: none;
+      }
+      #nudgeControls button {
+        font-size: 16px;
+        padding: 5px 10px;
+        margin: 2px;
       }
     </style>
   </head>
   <body>
     <h1>Toastie UTS Tool</h1>
-    <p>Select a sample image or upload your own:</p>
-    <select id="sampleImages">
-      <option value="">-- Select Sample Image --</option>
-      <option value="images/sample1.png">Sample 1</option>
-      <option value="images/sample2.png">Sample 2</option>
-      <!-- Add more sample images as needed -->
-    </select>
-    <input type="file" id="uploadImage" accept="image/*">
-    <br>
-    <img id="imagePreview" src="" alt="Source Image">
 
+    <!-- Top Container: Source Image and Room Preview -->
+    <div id="topContainer">
+      <div id="sourceContainer">
+        <p>Select a sample image or upload your own:</p>
+        <select id="sampleImages">
+          <option value="">-- Select Sample Image --</option>
+          <option value="images/sample1.png">Sample 1</option>
+          <option value="images/sample2.png">Sample 2</option>
+          <!-- Add more sample images as needed -->
+        </select>
+        <input type="file" id="uploadImage" accept="image/*">
+        <img id="imagePreview" src="" alt="Source Image">
+        <div id="nudgeControls">
+          <button id="nudgeUp">↑</button>
+          <button id="nudgeLeft">←</button>
+          <button id="nudgeDown">↓</button>
+          <button id="nudgeRight">→</button>
+          <button id="confirmCropBtn">Confirm Crop</button>
+        </div>
+      </div>
+      <div id="roomPreviewContainer">
+        <h2>Room Preview</h2>
+        <p>This preview simulates a continuous dungeon room built using your tile selections.</p>
+        <canvas id="roomPreviewCanvas" width="500" height="500"></canvas>
+      </div>
+    </div>
+
+    <!-- Tile Table -->
     <h2>Tileset Configuration</h2>
     <p>
-      Click on a cell below to define a tile variant. Each row corresponds to a tile type (Floor, North Wall, South Wall, West Wall, East Wall) and the columns represent different variations (default 4 per type). The first cropped variant for each tile type defines its default dimensions; subsequent crops are automatically scaled to match. Clicking on an already defined tile variant will re‑open the crop tool with the previous crop area.
+      Click on a cell below to define a tile variant. Each row corresponds to a tile type and the columns represent different variations (default 4 per type). The first cropped variant for each tile type sets the default size; subsequent crops are scaled to match. If a tile already has a selection, clicking it re‑opens the crop tool using its stored crop data, or if absent, the last confirmed crop.
     </p>
     <table id="tileTable">
       <thead>
@@ -142,27 +149,36 @@
           <td class="tileCell" data-tile-type="EastWall" data-variation="3"></td>
           <td class="tileCell" data-tile-type="EastWall" data-variation="4"></td>
         </tr>
+        <tr data-tile-type="NorthwestCorner">
+          <td>Northwest Corner</td>
+          <td class="tileCell" data-tile-type="NorthwestCorner" data-variation="1"></td>
+          <td class="tileCell" data-tile-type="NorthwestCorner" data-variation="2"></td>
+          <td class="tileCell" data-tile-type="NorthwestCorner" data-variation="3"></td>
+          <td class="tileCell" data-tile-type="NorthwestCorner" data-variation="4"></td>
+        </tr>
+        <tr data-tile-type="NortheastCorner">
+          <td>Northeast Corner</td>
+          <td class="tileCell" data-tile-type="NortheastCorner" data-variation="1"></td>
+          <td class="tileCell" data-tile-type="NortheastCorner" data-variation="2"></td>
+          <td class="tileCell" data-tile-type="NortheastCorner" data-variation="3"></td>
+          <td class="tileCell" data-tile-type="NortheastCorner" data-variation="4"></td>
+        </tr>
+        <tr data-tile-type="SouthwestCorner">
+          <td>Southwest Corner</td>
+          <td class="tileCell" data-tile-type="SouthwestCorner" data-variation="1"></td>
+          <td class="tileCell" data-tile-type="SouthwestCorner" data-variation="2"></td>
+          <td class="tileCell" data-tile-type="SouthwestCorner" data-variation="3"></td>
+          <td class="tileCell" data-tile-type="SouthwestCorner" data-variation="4"></td>
+        </tr>
+        <tr data-tile-type="SoutheastCorner">
+          <td>Southeast Corner</td>
+          <td class="tileCell" data-tile-type="SoutheastCorner" data-variation="1"></td>
+          <td class="tileCell" data-tile-type="SoutheastCorner" data-variation="2"></td>
+          <td class="tileCell" data-tile-type="SoutheastCorner" data-variation="3"></td>
+          <td class="tileCell" data-tile-type="SoutheastCorner" data-variation="4"></td>
+        </tr>
       </tbody>
     </table>
-
-    <h2>Room Preview</h2>
-    <p>This preview simulates a continuous dungeon room (as used in a roguelike game) built using the defined tile variants.</p>
-    <canvas id="roomPreviewCanvas" width="500" height="500"></canvas>
-
-    <!-- Crop Modal -->
-    <div id="cropModal">
-      <div id="cropContainer">
-        <div>
-          <label for="scaleSlider">Zoom:</label>
-          <input type="range" id="scaleSlider" min="0.5" max="2" step="0.1" value="1">
-        </div>
-        <img id="cropImage" src="" alt="Crop Area">
-        <div id="modalButtons">
-          <button id="cancelCrop">Cancel</button>
-          <button id="confirmCrop">Confirm</button>
-        </div>
-      </div>
-    </div>
 
     <script
       src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"
@@ -171,13 +187,13 @@
       referrerpolicy="no-referrer"
     ></script>
     <script>
-      // Global state variables
+      // Global state
       let currentImage = null;
       let cropper = null;
       let selectedTileCell = null;
+      let lastCropData = null; // last confirmed crop data
       // Global metadata: { tileType: { defaultSize: {width, height}, variations: [ ... ] } }
       window.tilesetMetadata = {};
-      // Global default tile sizes (set on first crop per tile type)
       window.defaultTileSizes = {};
 
       // Elements
@@ -185,6 +201,12 @@
       const sampleImagesSelect = document.getElementById('sampleImages');
       const uploadImageInput = document.getElementById('uploadImage');
       const roomPreviewCanvas = document.getElementById('roomPreviewCanvas');
+      const nudgeControls = document.getElementById('nudgeControls');
+      const nudgeUpBtn = document.getElementById('nudgeUp');
+      const nudgeDownBtn = document.getElementById('nudgeDown');
+      const nudgeLeftBtn = document.getElementById('nudgeLeft');
+      const nudgeRightBtn = document.getElementById('nudgeRight');
+      const confirmCropBtn = document.getElementById('confirmCropBtn');
 
       // Load sample image from dropdown selection
       sampleImagesSelect.addEventListener('change', function() {
@@ -209,72 +231,88 @@
         }
       });
 
-      // Handle tile cell click to open crop modal.
-      // If a variant has already been selected, restore its crop data.
+      // When a tile cell is clicked, activate crop mode on the sample image.
       document.querySelectorAll('.tileCell').forEach(cell => {
         cell.addEventListener('click', function() {
-          if (!currentImage) {
-            alert('Please select or upload an image first.');
-            return;
+          // Auto-confirm any active crop if clicking a different cell.
+          if (cropper && selectedTileCell && selectedTileCell !== this) {
+            confirmCrop();
           }
           selectedTileCell = this;
-          openCropModal();
+          openCropMode();
         });
       });
 
-      // Crop modal elements
-      const cropModal = document.getElementById('cropModal');
-      const cropImage = document.getElementById('cropImage');
-      const scaleSlider = document.getElementById('scaleSlider');
-      const cancelCrop = document.getElementById('cancelCrop');
-      const confirmCrop = document.getElementById('confirmCrop');
-
-      function openCropModal() {
-        cropImage.src = currentImage.src;
-        cropModal.style.display = 'flex';
+      // Open crop mode directly on the image preview.
+      function openCropMode() {
+        // Show the nudge controls
+        nudgeControls.style.display = 'block';
+        // Initialize Cropper on imagePreview (if not already active)
         if (cropper) cropper.destroy();
-        cropImage.onload = function() {
-          cropper = new Cropper(cropImage, {
-            aspectRatio: 1,
-            viewMode: 1,
-            autoCropArea: 0.5
-          });
-          // If this cell already has a defined variant, pre-set the crop box.
-          const tileType = selectedTileCell.getAttribute('data-tile-type');
-          const variation = selectedTileCell.getAttribute('data-variation');
-          const variantIndex = parseInt(variation) - 1;
-          if (window.tilesetMetadata[tileType] && window.tilesetMetadata[tileType].variations[variantIndex] &&
-              window.tilesetMetadata[tileType].variations[variantIndex].cropData) {
-            const storedCropData = window.tilesetMetadata[tileType].variations[variantIndex].cropData;
-            cropper.setData(storedCropData);
+        cropper = new Cropper(imagePreview, {
+          aspectRatio: 1,
+          viewMode: 1,
+          autoCropArea: 0.5,
+          ready() {
+            const tileType = selectedTileCell.getAttribute('data-tile-type');
+            const variation = selectedTileCell.getAttribute('data-variation');
+            const variantIndex = parseInt(variation) - 1;
+            let storedCropData = null;
+            if (window.tilesetMetadata[tileType] &&
+                window.tilesetMetadata[tileType].variations[variantIndex] &&
+                window.tilesetMetadata[tileType].variations[variantIndex].cropData) {
+              storedCropData = window.tilesetMetadata[tileType].variations[variantIndex].cropData;
+            } else if (lastCropData) {
+              storedCropData = lastCropData;
+            }
+            if (storedCropData) {
+              cropper.setData(storedCropData);
+            }
           }
-        };
+        });
       }
 
-      // Update cropper zoom when slider changes
-      scaleSlider.addEventListener('input', function() {
-        if (cropper) cropper.zoomTo(this.value);
-      });
-
-      cancelCrop.addEventListener('click', function() {
-        cropModal.style.display = 'none';
+      // Nudge controls: move crop box by 5 pixels per click.
+      nudgeUpBtn.addEventListener('click', function() {
         if (cropper) {
-          cropper.destroy();
-          cropper = null;
+          cropper.move(0, -5);
+          updateRoomPreview();
+        }
+      });
+      nudgeDownBtn.addEventListener('click', function() {
+        if (cropper) {
+          cropper.move(0, 5);
+          updateRoomPreview();
+        }
+      });
+      nudgeLeftBtn.addEventListener('click', function() {
+        if (cropper) {
+          cropper.move(-5, 0);
+          updateRoomPreview();
+        }
+      });
+      nudgeRightBtn.addEventListener('click', function() {
+        if (cropper) {
+          cropper.move(5, 0);
+          updateRoomPreview();
         }
       });
 
-      confirmCrop.addEventListener('click', function() {
+      // Confirm crop and save the selection.
+      confirmCropBtn.addEventListener('click', confirmCrop);
+
+      function confirmCrop() {
         if (cropper) {
           let canvas = cropper.getCroppedCanvas();
           const tileType = selectedTileCell.getAttribute('data-tile-type');
-          // Get crop data (relative to the natural image size)
           const cropData = cropper.getData(true);
-          // If this is the first variant for the tile type, record its size as default.
+          // Save last confirmed crop data for reuse if no cell-specific data.
+          lastCropData = cropData;
+          // If no default size exists for this tile type, record this crop's dimensions.
           if (!window.defaultTileSizes[tileType]) {
             window.defaultTileSizes[tileType] = { width: canvas.width, height: canvas.height };
           } else {
-            // Scale canvas to default size if needed.
+            // Otherwise, scale canvas to default dimensions.
             const defaultWidth = window.defaultTileSizes[tileType].width;
             const defaultHeight = window.defaultTileSizes[tileType].height;
             if (canvas.width !== defaultWidth || canvas.height !== defaultHeight) {
@@ -288,7 +326,7 @@
           }
           const croppedDataUrl = canvas.toDataURL('image/png');
           selectedTileCell.innerHTML = '<img src="' + croppedDataUrl + '" alt="Tile Variant">';
-          // Save metadata for this tile variant, including the crop data.
+          // Save metadata for this tile variant, including cropData.
           window.tilesetMetadata[tileType] = window.tilesetMetadata[tileType] || { variations: [] };
           const variantIndex = parseInt(selectedTileCell.getAttribute('data-variation')) - 1;
           window.tilesetMetadata[tileType].variations[variantIndex] = {
@@ -298,43 +336,42 @@
             height: canvas.height,
             cropData: cropData
           };
-          cropModal.style.display = 'none';
+          // End crop mode: destroy cropper and hide nudge controls.
           cropper.destroy();
           cropper = null;
+          nudgeControls.style.display = 'none';
           updateRoomPreview();
         }
-      });
+      }
 
-      // Update room preview using a canvas.
+      // Update the room preview on a canvas.
       function updateRoomPreview() {
         const ctx = roomPreviewCanvas.getContext('2d');
-        // Use a 5x5 grid for the preview.
         const numRows = 5, numCols = 5;
-        // Use the Floor tile's default width if available, else default to 100.
-        const tileSize = window.defaultTileSizes["Floor"] ? window.defaultTileSizes["Floor"].width : 100;
+        const tileSize = window.defaultTileSizes["Floor"]
+          ? window.defaultTileSizes["Floor"].width
+          : 100;
         roomPreviewCanvas.width = numCols * tileSize;
         roomPreviewCanvas.height = numRows * tileSize;
         ctx.clearRect(0, 0, roomPreviewCanvas.width, roomPreviewCanvas.height);
-
         // Determine tile type per grid cell:
-        // Top row: NorthWall; Bottom row: SouthWall; Left column (excluding corners): WestWall; Right column (excluding corners): EastWall; Interior: Floor.
         for (let r = 0; r < numRows; r++) {
           for (let c = 0; c < numCols; c++) {
             let tileType = "Floor";
-            if (r === 0) {
-              tileType = "NorthWall";
-            } else if (r === numRows - 1) {
-              tileType = "SouthWall";
-            }
-            if (c === 0 && r !== 0 && r !== numRows - 1) {
-              tileType = "WestWall";
-            } else if (c === numCols - 1 && r !== 0 && r !== numRows - 1) {
-              tileType = "EastWall";
-            }
-            const variant = (window.tilesetMetadata[tileType] &&
-                             window.tilesetMetadata[tileType].variations &&
-                             window.tilesetMetadata[tileType].variations[0] &&
-                             window.tilesetMetadata[tileType].variations[0].imageData) || null;
+            if (r === 0 && c === 0) tileType = "NorthwestCorner";
+            else if (r === 0 && c === numCols - 1) tileType = "NortheastCorner";
+            else if (r === numRows - 1 && c === 0) tileType = "SouthwestCorner";
+            else if (r === numRows - 1 && c === numCols - 1) tileType = "SoutheastCorner";
+            else if (r === 0) tileType = "NorthWall";
+            else if (r === numRows - 1) tileType = "SouthWall";
+            else if (c === 0) tileType = "WestWall";
+            else if (c === numCols - 1) tileType = "EastWall";
+            const variant =
+              (window.tilesetMetadata[tileType] &&
+                window.tilesetMetadata[tileType].variations &&
+                window.tilesetMetadata[tileType].variations[0] &&
+                window.tilesetMetadata[tileType].variations[0].imageData) ||
+              null;
             const x = c * tileSize;
             const y = r * tileSize;
             if (variant) {
@@ -355,6 +392,13 @@
           }
         }
       }
+
+      // Optional: auto-confirm crop if user clicks outside the nudge controls and tile cells.
+      document.addEventListener('click', function(e) {
+        if (cropper && !e.target.closest('#nudgeControls') && !e.target.closest('.tileCell')) {
+          confirmCrop();
+        }
+      });
     </script>
   </body>
 </html>
