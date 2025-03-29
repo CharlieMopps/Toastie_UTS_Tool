@@ -11,21 +11,30 @@
       referrerpolicy="no-referrer"
     />
     <style>
+      /* Grid container for left and right columns */
+      #gridContainer {
+        display: grid;
+        grid-template-columns: 1fr 800px;
+        gap: 20px;
+      }
       body {
-        font-family: Arial, sans-serif;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #2c2c2c;
+        color: #eee;
         margin: 20px;
       }
-      /* Top container: source image on left, room preview on right */
-      #topContainer {
-        display: flex;
-        gap: 20px;
-        align-items: flex-start;
+      h1, h2, p {
+        margin: 10px 0;
       }
-      #sourceContainer,
-      #roomPreviewContainer {
-        flex: 1;
+      /* Left column styling */
+      #leftColumn {
+        overflow-y: auto;
+        max-height: 90vh;
       }
-      /* Image preview container: position relative for arrow overlays */
+      /* Source image container */
+      #sourceContainer {
+        margin-bottom: 20px;
+      }
       #imagePreviewContainer {
         position: relative;
         display: inline-block;
@@ -33,18 +42,34 @@
       #imagePreview {
         max-width: 100%;
         max-height: 400px;
-        border: 1px solid #ccc;
+        border: 2px solid #444;
+        border-radius: 4px;
         display: block;
         margin-top: 10px;
       }
-      /* Nudge arrow buttons (overlayed on the image preview container) */
-      .nudgeArrow {
+      /* Nudge controls overlayed on imagePreview */
+      #nudgeControlsContainer {
+        display: none;
         position: absolute;
-        background: rgba(255, 255, 255, 0.8);
-        border: 1px solid #ccc;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+      }
+      .nudgeArrow, #confirmCropBtn {
+        position: absolute;
+        background: rgba(255, 255, 255, 0.9);
+        border: none;
+        border-radius: 4px;
         cursor: pointer;
-        padding: 5px;
+        padding: 5px 8px;
         font-size: 16px;
+        pointer-events: all;
+        transition: background 0.2s;
+      }
+      .nudgeArrow:hover, #confirmCropBtn:hover {
+        background: #ddd;
       }
       #nudgeUp {
         top: 5px;
@@ -66,162 +91,294 @@
         top: 50%;
         transform: translateY(-50%);
       }
-      /* Confirm Crop button in bottom-right corner */
       #confirmCropBtn {
-        position: absolute;
         bottom: 5px;
         right: 5px;
-        background: lightgreen;
-        border: 1px solid #ccc;
-        cursor: pointer;
-        padding: 5px 10px;
+        background: #4caf50;
+        color: #fff;
       }
-      /* Hide nudge controls container by default */
-      #nudgeControlsContainer {
-        display: none;
+      /* Right column: Room Preview container */
+      #roomPreviewContainer {
+        position: sticky;
+        top: 20px;
       }
-      /* Tile Table */
-      #tileTable {
+      #roomPreviewCanvas {
+        border: 2px solid #444;
+        border-radius: 4px;
+      }
+      /* Modern tile selector styling */
+      #tileSelector {
         margin-top: 20px;
-        border-collapse: collapse;
-        width: 100%;
       }
-      #tileTable th,
-      #tileTable td {
-        border: 1px solid #ccc;
+      .tileSection {
+        margin-bottom: 15px;
         padding: 10px;
-        text-align: center;
+        background: #333;
+        border-radius: 4px;
+      }
+      .tileSection h3 {
+        margin-bottom: 8px;
+      }
+      /* Use CSS grid to display variants in multiple columns */
+      .tileRow {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+        gap: 10px;
       }
       .tileCell {
+        width: 80px;
+        height: 80px;
+        background: #444;
+        border: 2px solid #555;
+        border-radius: 4px;
         cursor: pointer;
-        width: 100px;
-        height: 100px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.1s;
         position: relative;
+      }
+      .tileCell:hover {
+        transform: scale(1.05);
       }
       .tileCell img {
         max-width: 100%;
         max-height: 100%;
+        border-radius: 2px;
       }
-      /* Room preview canvas */
-      #roomPreviewCanvas {
-        border: 1px solid #ccc;
+      /* "Make Seamless" button for each tile section (placed below the tileRow) */
+      .seamlessTypeBtn {
+        margin-top: 8px;
+        padding: 4px 8px;
+        font-size: 12px;
+        background: #007acc;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      .seamlessTypeBtn:hover {
+        background: #005f99;
+      }
+      /* Add new tile type button */
+      #addTileTypeBtn {
+        margin-top: 10px;
+        padding: 8px 12px;
+        border: none;
+        border-radius: 4px;
+        background: #007acc;
+        color: #fff;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      #addTileTypeBtn:hover {
+        background: #005f99;
+      }
+      /* Scrollbar styling for left column */
+      #leftColumn::-webkit-scrollbar {
+        width: 8px;
+      }
+      #leftColumn::-webkit-scrollbar-track {
+        background: #333;
+        border-radius: 4px;
+      }
+      #leftColumn::-webkit-scrollbar-thumb {
+        background: #666;
+        border-radius: 4px;
       }
     </style>
   </head>
   <body>
     <h1>Toastie UTS Tool</h1>
-    <!-- Top Container: Source Image & Room Preview -->
-    <div id="topContainer">
-      <div id="sourceContainer">
-        <p>Select a sample image or upload your own:</p>
-        <select id="sampleImages">
-          <option value="">-- Select Sample Image --</option>
-          <option value="images/sample1.png">Sample 1</option>
-          <option value="images/sample2.png">Sample 2</option>
-          <!-- Add more sample images as needed -->
-        </select>
-        <input type="file" id="uploadImage" accept="image/*">
-        <div id="imagePreviewContainer">
-          <img id="imagePreview" src="" alt="Source Image">
-          <!-- Nudge controls overlay -->
-          <div id="nudgeControlsContainer">
-            <button id="nudgeUp" class="nudgeArrow">↑</button>
-            <button id="nudgeDown" class="nudgeArrow">↓</button>
-            <button id="nudgeLeft" class="nudgeArrow">←</button>
-            <button id="nudgeRight" class="nudgeArrow">→</button>
-            <button id="confirmCropBtn">Confirm Crop</button>
+    <div id="gridContainer">
+      <div id="leftColumn">
+        <!-- Source Image & Controls -->
+        <div id="sourceContainer">
+          <p>Select a sample image or upload your own:</p>
+          <select id="sampleImages">
+            <option value="">-- Select Sample Image --</option>
+            <option value="images/sample1.png">Sample 1</option>
+            <option value="images/sample2.png">Sample 2</option>
+          </select>
+          <input type="file" id="uploadImage" accept="image/*">
+          <div id="imagePreviewContainer">
+            <img id="imagePreview" src="" alt="Source Image">
+            <!-- Nudge controls overlay -->
+            <div id="nudgeControlsContainer">
+              <button id="nudgeUp" class="nudgeArrow">↑</button>
+              <button id="nudgeDown" class="nudgeArrow">↓</button>
+              <button id="nudgeLeft" class="nudgeArrow">←</button>
+              <button id="nudgeRight" class="nudgeArrow">→</button>
+              <button id="confirmCropBtn">Confirm Crop</button>
+            </div>
           </div>
+        </div>
+        <!-- Tile Selector -->
+        <div id="tileSelector">
+          <h2>Tile Variants</h2>
+          <!-- Existing tile sections -->
+          <div class="tileSection" data-tile-type="Floor">
+            <h3>Floor</h3>
+            <div class="tileRow">
+              <div class="tileCell" data-tile-type="Floor" data-variation="1"></div>
+              <div class="tileCell" data-tile-type="Floor" data-variation="2"></div>
+              <div class="tileCell" data-tile-type="Floor" data-variation="3"></div>
+              <div class="tileCell" data-tile-type="Floor" data-variation="4"></div>
+            </div>
+            <button class="seamlessTypeBtn" data-tile-type="Floor">Make Seamless</button>
+          </div>
+          <div class="tileSection" data-tile-type="NorthWall">
+            <h3>North Wall</h3>
+            <div class="tileRow">
+              <div class="tileCell" data-tile-type="NorthWall" data-variation="1"></div>
+              <div class="tileCell" data-tile-type="NorthWall" data-variation="2"></div>
+              <div class="tileCell" data-tile-type="NorthWall" data-variation="3"></div>
+              <div class="tileCell" data-tile-type="NorthWall" data-variation="4"></div>
+            </div>
+            <button class="seamlessTypeBtn" data-tile-type="NorthWall">Make Seamless</button>
+          </div>
+          <div class="tileSection" data-tile-type="SouthWall">
+            <h3>South Wall</h3>
+            <div class="tileRow">
+              <div class="tileCell" data-tile-type="SouthWall" data-variation="1"></div>
+              <div class="tileCell" data-tile-type="SouthWall" data-variation="2"></div>
+              <div class="tileCell" data-tile-type="SouthWall" data-variation="3"></div>
+              <div class="tileCell" data-tile-type="SouthWall" data-variation="4"></div>
+            </div>
+            <button class="seamlessTypeBtn" data-tile-type="SouthWall">Make Seamless</button>
+          </div>
+          <div class="tileSection" data-tile-type="WestWall">
+            <h3>West Wall</h3>
+            <div class="tileRow">
+              <div class="tileCell" data-tile-type="WestWall" data-variation="1"></div>
+              <div class="tileCell" data-tile-type="WestWall" data-variation="2"></div>
+              <div class="tileCell" data-tile-type="WestWall" data-variation="3"></div>
+              <div class="tileCell" data-tile-type="WestWall" data-variation="4"></div>
+            </div>
+            <button class="seamlessTypeBtn" data-tile-type="WestWall">Make Seamless</button>
+          </div>
+          <div class="tileSection" data-tile-type="EastWall">
+            <h3>East Wall</h3>
+            <div class="tileRow">
+              <div class="tileCell" data-tile-type="EastWall" data-variation="1"></div>
+              <div class="tileCell" data-tile-type="EastWall" data-variation="2"></div>
+              <div class="tileCell" data-tile-type="EastWall" data-variation="3"></div>
+              <div class="tileCell" data-tile-type="EastWall" data-variation="4"></div>
+            </div>
+            <button class="seamlessTypeBtn" data-tile-type="EastWall">Make Seamless</button>
+          </div>
+          <div class="tileSection" data-tile-type="NorthwestCorner">
+            <h3>Northwest Corner</h3>
+            <div class="tileRow">
+              <div class="tileCell" data-tile-type="NorthwestCorner" data-variation="1"></div>
+              <div class="tileCell" data-tile-type="NorthwestCorner" data-variation="2"></div>
+              <div class="tileCell" data-tile-type="NorthwestCorner" data-variation="3"></div>
+              <div class="tileCell" data-tile-type="NorthwestCorner" data-variation="4"></div>
+            </div>
+            <button class="seamlessTypeBtn" data-tile-type="NorthwestCorner">Make Seamless</button>
+          </div>
+          <div class="tileSection" data-tile-type="NortheastCorner">
+            <h3>Northeast Corner</h3>
+            <div class="tileRow">
+              <div class="tileCell" data-tile-type="NortheastCorner" data-variation="1"></div>
+              <div class="tileCell" data-tile-type="NortheastCorner" data-variation="2"></div>
+              <div class="tileCell" data-tile-type="NortheastCorner" data-variation="3"></div>
+              <div class="tileCell" data-tile-type="NortheastCorner" data-variation="4"></div>
+            </div>
+            <button class="seamlessTypeBtn" data-tile-type="NortheastCorner">Make Seamless</button>
+          </div>
+          <div class="tileSection" data-tile-type="SouthwestCorner">
+            <h3>Southwest Corner</h3>
+            <div class="tileRow">
+              <div class="tileCell" data-tile-type="SouthwestCorner" data-variation="1"></div>
+              <div class="tileCell" data-tile-type="SouthwestCorner" data-variation="2"></div>
+              <div class="tileCell" data-tile-type="SouthwestCorner" data-variation="3"></div>
+              <div class="tileCell" data-tile-type="SouthwestCorner" data-variation="4"></div>
+            </div>
+            <button class="seamlessTypeBtn" data-tile-type="SouthwestCorner">Make Seamless</button>
+          </div>
+          <div class="tileSection" data-tile-type="SoutheastCorner">
+            <h3>Southeast Corner</h3>
+            <div class="tileRow">
+              <div class="tileCell" data-tile-type="SoutheastCorner" data-variation="1"></div>
+              <div class="tileCell" data-tile-type="SoutheastCorner" data-variation="2"></div>
+              <div class="tileCell" data-tile-type="SoutheastCorner" data-variation="3"></div>
+              <div class="tileCell" data-tile-type="SoutheastCorner" data-variation="4"></div>
+            </div>
+            <button class="seamlessTypeBtn" data-tile-type="SoutheastCorner">Make Seamless</button>
+          </div>
+          <!-- New tile types -->
+          <div class="tileSection" data-tile-type="Door">
+            <h3>Door</h3>
+            <div class="tileRow">
+              <div class="tileCell" data-tile-type="Door" data-variation="1"></div>
+              <div class="tileCell" data-tile-type="Door" data-variation="2"></div>
+              <div class="tileCell" data-tile-type="Door" data-variation="3"></div>
+              <div class="tileCell" data-tile-type="Door" data-variation="4"></div>
+            </div>
+            <button class="seamlessTypeBtn" data-tile-type="Door">Make Seamless</button>
+          </div>
+          <div class="tileSection" data-tile-type="DoorFrame">
+            <h3>Door Frame</h3>
+            <div class="tileRow">
+              <div class="tileCell" data-tile-type="DoorFrame" data-variation="1"></div>
+              <div class="tileCell" data-tile-type="DoorFrame" data-variation="2"></div>
+              <div class="tileCell" data-tile-type="DoorFrame" data-variation="3"></div>
+              <div class="tileCell" data-tile-type="DoorFrame" data-variation="4"></div>
+            </div>
+            <button class="seamlessTypeBtn" data-tile-type="DoorFrame">Make Seamless</button>
+          </div>
+          <div class="tileSection" data-tile-type="InnerTopLeft">
+            <h3>Inner Top‑Left</h3>
+            <div class="tileRow">
+              <div class="tileCell" data-tile-type="InnerTopLeft" data-variation="1"></div>
+              <div class="tileCell" data-tile-type="InnerTopLeft" data-variation="2"></div>
+              <div class="tileCell" data-tile-type="InnerTopLeft" data-variation="3"></div>
+              <div class="tileCell" data-tile-type="InnerTopLeft" data-variation="4"></div>
+            </div>
+            <button class="seamlessTypeBtn" data-tile-type="InnerTopLeft">Make Seamless</button>
+          </div>
+          <div class="tileSection" data-tile-type="InnerTopRight">
+            <h3>Inner Top‑Right</h3>
+            <div class="tileRow">
+              <div class="tileCell" data-tile-type="InnerTopRight" data-variation="1"></div>
+              <div class="tileCell" data-tile-type="InnerTopRight" data-variation="2"></div>
+              <div class="tileCell" data-tile-type="InnerTopRight" data-variation="3"></div>
+              <div class="tileCell" data-tile-type="InnerTopRight" data-variation="4"></div>
+            </div>
+            <button class="seamlessTypeBtn" data-tile-type="InnerTopRight">Make Seamless</button>
+          </div>
+          <div class="tileSection" data-tile-type="InnerBottomLeft">
+            <h3>Inner Bottom‑Left</h3>
+            <div class="tileRow">
+              <div class="tileCell" data-tile-type="InnerBottomLeft" data-variation="1"></div>
+              <div class="tileCell" data-tile-type="InnerBottomLeft" data-variation="2"></div>
+              <div class="tileCell" data-tile-type="InnerBottomLeft" data-variation="3"></div>
+              <div class="tileCell" data-tile-type="InnerBottomLeft" data-variation="4"></div>
+            </div>
+            <button class="seamlessTypeBtn" data-tile-type="InnerBottomLeft">Make Seamless</button>
+          </div>
+          <div class="tileSection" data-tile-type="InnerBottomRight">
+            <h3>Inner Bottom‑Right</h3>
+            <div class="tileRow">
+              <div class="tileCell" data-tile-type="InnerBottomRight" data-variation="1"></div>
+              <div class="tileCell" data-tile-type="InnerBottomRight" data-variation="2"></div>
+              <div class="tileCell" data-tile-type="InnerBottomRight" data-variation="3"></div>
+              <div class="tileCell" data-tile-type="InnerBottomRight" data-variation="4"></div>
+            </div>
+            <button class="seamlessTypeBtn" data-tile-type="InnerBottomRight">Make Seamless</button>
+          </div>
+          <!-- Button to add new tile types -->
+          <button id="addTileTypeBtn">Add New Tile Type</button>
         </div>
       </div>
       <div id="roomPreviewContainer">
         <h2>Room Preview</h2>
-        <p>This preview simulates a continuous dungeon room built using your tile selections.</p>
-        <canvas id="roomPreviewCanvas" width="500" height="500"></canvas>
+        <p>This preview shows a square room with doorways on each cardinal direction.</p>
+        <canvas id="roomPreviewCanvas" width="800" height="800"></canvas>
       </div>
     </div>
-
-    <!-- Tile Table -->
-    <h2>Tileset Configuration</h2>
-    <p>
-      Click on a cell below to define a tile variant. Each row corresponds to a tile type and the columns represent different variations (default 4 per type). The first cropped variant for each tile type sets the default size; subsequent crops are scaled to match.
-      Clicking an already defined tile re‑opens the crop tool with its stored crop data, or if absent, the last confirmed crop.
-    </p>
-    <table id="tileTable">
-      <thead>
-        <tr>
-          <th>Tile Type</th>
-          <th>Variant 1</th>
-          <th>Variant 2</th>
-          <th>Variant 3</th>
-          <th>Variant 4</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr data-tile-type="Floor">
-          <td>Floor</td>
-          <td class="tileCell" data-tile-type="Floor" data-variation="1"></td>
-          <td class="tileCell" data-tile-type="Floor" data-variation="2"></td>
-          <td class="tileCell" data-tile-type="Floor" data-variation="3"></td>
-          <td class="tileCell" data-tile-type="Floor" data-variation="4"></td>
-        </tr>
-        <tr data-tile-type="NorthWall">
-          <td>North Wall</td>
-          <td class="tileCell" data-tile-type="NorthWall" data-variation="1"></td>
-          <td class="tileCell" data-tile-type="NorthWall" data-variation="2"></td>
-          <td class="tileCell" data-tile-type="NorthWall" data-variation="3"></td>
-          <td class="tileCell" data-tile-type="NorthWall" data-variation="4"></td>
-        </tr>
-        <tr data-tile-type="SouthWall">
-          <td>South Wall</td>
-          <td class="tileCell" data-tile-type="SouthWall" data-variation="1"></td>
-          <td class="tileCell" data-tile-type="SouthWall" data-variation="2"></td>
-          <td class="tileCell" data-tile-type="SouthWall" data-variation="3"></td>
-          <td class="tileCell" data-tile-type="SouthWall" data-variation="4"></td>
-        </tr>
-        <tr data-tile-type="WestWall">
-          <td>West Wall</td>
-          <td class="tileCell" data-tile-type="WestWall" data-variation="1"></td>
-          <td class="tileCell" data-tile-type="WestWall" data-variation="2"></td>
-          <td class="tileCell" data-tile-type="WestWall" data-variation="3"></td>
-          <td class="tileCell" data-tile-type="WestWall" data-variation="4"></td>
-        </tr>
-        <tr data-tile-type="EastWall">
-          <td>East Wall</td>
-          <td class="tileCell" data-tile-type="EastWall" data-variation="1"></td>
-          <td class="tileCell" data-tile-type="EastWall" data-variation="2"></td>
-          <td class="tileCell" data-tile-type="EastWall" data-variation="3"></td>
-          <td class="tileCell" data-tile-type="EastWall" data-variation="4"></td>
-        </tr>
-        <tr data-tile-type="NorthwestCorner">
-          <td>Northwest Corner</td>
-          <td class="tileCell" data-tile-type="NorthwestCorner" data-variation="1"></td>
-          <td class="tileCell" data-tile-type="NorthwestCorner" data-variation="2"></td>
-          <td class="tileCell" data-tile-type="NorthwestCorner" data-variation="3"></td>
-          <td class="tileCell" data-tile-type="NorthwestCorner" data-variation="4"></td>
-        </tr>
-        <tr data-tile-type="NortheastCorner">
-          <td>Northeast Corner</td>
-          <td class="tileCell" data-tile-type="NortheastCorner" data-variation="1"></td>
-          <td class="tileCell" data-tile-type="NortheastCorner" data-variation="2"></td>
-          <td class="tileCell" data-tile-type="NortheastCorner" data-variation="3"></td>
-          <td class="tileCell" data-tile-type="NortheastCorner" data-variation="4"></td>
-        </tr>
-        <tr data-tile-type="SouthwestCorner">
-          <td>Southwest Corner</td>
-          <td class="tileCell" data-tile-type="SouthwestCorner" data-variation="1"></td>
-          <td class="tileCell" data-tile-type="SouthwestCorner" data-variation="2"></td>
-          <td class="tileCell" data-tile-type="SouthwestCorner" data-variation="3"></td>
-          <td class="tileCell" data-tile-type="SouthwestCorner" data-variation="4"></td>
-        </tr>
-        <tr data-tile-type="SoutheastCorner">
-          <td>Southeast Corner</td>
-          <td class="tileCell" data-tile-type="SoutheastCorner" data-variation="1"></td>
-          <td class="tileCell" data-tile-type="SoutheastCorner" data-variation="2"></td>
-          <td class="tileCell" data-tile-type="SoutheastCorner" data-variation="3"></td>
-          <td class="tileCell" data-tile-type="SoutheastCorner" data-variation="4"></td>
-        </tr>
-      </tbody>
-    </table>
 
     <script
       src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"
@@ -230,238 +387,341 @@
       referrerpolicy="no-referrer"
     ></script>
     <script>
-      // Global state variables
-      let currentImage = null;
-      let cropper = null;
-      let selectedTileCell = null;
-      let lastCropData = null; // Last confirmed crop data
-      // Global metadata: { tileType: { defaultSize: {width, height}, variations: [ ... ] } }
-      window.tilesetMetadata = {};
-      window.defaultTileSizes = {};
+      document.addEventListener('DOMContentLoaded', function() {
+        // Global state variables
+        let currentImage = null;
+        let cropper = null;
+        let selectedTileCell = null;
+        let lastCropData = null; // Last confirmed crop data
+        // Global metadata: { tileType: { defaultSize: {width, height}, variations: [ ... ] } }
+        window.tilesetMetadata = {};
+        window.defaultTileSizes = {};
 
-      // Elements
-      const imagePreview = document.getElementById('imagePreview');
-      const sampleImagesSelect = document.getElementById('sampleImages');
-      const uploadImageInput = document.getElementById('uploadImage');
-      const roomPreviewCanvas = document.getElementById('roomPreviewCanvas');
-      const nudgeUpBtn = document.getElementById('nudgeUp');
-      const nudgeDownBtn = document.getElementById('nudgeDown');
-      const nudgeLeftBtn = document.getElementById('nudgeLeft');
-      const nudgeRightBtn = document.getElementById('nudgeRight');
-      const confirmCropBtn = document.getElementById('confirmCropBtn');
-      const nudgeControlsContainer = document.getElementById('nudgeControlsContainer');
+        // Elements
+        const imagePreview = document.getElementById('imagePreview');
+        const sampleImagesSelect = document.getElementById('sampleImages');
+        const uploadImageInput = document.getElementById('uploadImage');
+        const roomPreviewCanvas = document.getElementById('roomPreviewCanvas');
+        const nudgeUpBtn = document.getElementById('nudgeUp');
+        const nudgeDownBtn = document.getElementById('nudgeDown');
+        const nudgeLeftBtn = document.getElementById('nudgeLeft');
+        const nudgeRightBtn = document.getElementById('nudgeRight');
+        const confirmCropBtn = document.getElementById('confirmCropBtn');
+        const nudgeControlsContainer = document.getElementById('nudgeControlsContainer');
+        const addTileTypeBtn = document.getElementById('addTileTypeBtn');
+        const tileSelector = document.getElementById('tileSelector');
 
-      // Load sample image from dropdown selection
-      sampleImagesSelect.addEventListener('change', function() {
-        if (this.value) {
-          imagePreview.src = this.value;
-          imagePreview.style.display = 'block';
-          currentImage = imagePreview;
-        }
-      });
+        // Set a smaller initial crop area (roughly one-third the size)
+        const INITIAL_AUTO_CROP_AREA = 0.17;
 
-      // Load user-uploaded image
-      uploadImageInput.addEventListener('change', function() {
-        const file = this.files[0];
-        if (file) {
-          const reader = new FileReader();
-          reader.onload = function(e) {
-            imagePreview.src = e.target.result;
+        // Load sample image from dropdown selection
+        sampleImagesSelect.addEventListener('change', function() {
+          if (this.value) {
+            imagePreview.src = this.value;
             imagePreview.style.display = 'block';
             currentImage = imagePreview;
-          };
-          reader.readAsDataURL(file);
-        }
-      });
-
-      // When a tile cell is clicked, activate crop mode on the sample image.
-      document.querySelectorAll('.tileCell').forEach(cell => {
-        cell.addEventListener('click', function() {
-          if (cropper && selectedTileCell && selectedTileCell !== this) {
-            confirmCrop(); // Auto-confirm previous selection if switching cell
           }
-          selectedTileCell = this;
-          openCropMode();
         });
-      });
 
-      // Open crop mode on the sample image in-place.
-      function openCropMode() {
-        nudgeControlsContainer.style.display = 'block';
-        if (cropper) cropper.destroy();
-        cropper = new Cropper(imagePreview, {
-          aspectRatio: 1,
-          viewMode: 1,
-          autoCropArea: 0.5,
-          ready() {
+        // Load user-uploaded image
+        uploadImageInput.addEventListener('change', function() {
+          const file = this.files[0];
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+              imagePreview.src = e.target.result;
+              imagePreview.style.display = 'block';
+              currentImage = imagePreview;
+            };
+            reader.readAsDataURL(file);
+          }
+        });
+
+        // When a tile cell is clicked, activate crop mode on the sample image.
+        document.querySelectorAll('.tileCell').forEach(cell => {
+          cell.addEventListener('click', function() {
+            if (cropper && selectedTileCell && selectedTileCell !== this) {
+              confirmCrop(); // Auto-confirm previous selection if switching cell
+            }
+            selectedTileCell = this;
+            openCropMode();
+          });
+        });
+
+        // Open crop mode on the sample image in-place.
+        function openCropMode() {
+          nudgeControlsContainer.style.display = 'block';
+          if (cropper) cropper.destroy();
+          cropper = new Cropper(imagePreview, {
+            aspectRatio: 1,
+            viewMode: 1,
+            autoCropArea: INITIAL_AUTO_CROP_AREA,
+            ready() {
+              const tileType = selectedTileCell.getAttribute('data-tile-type');
+              const variation = selectedTileCell.getAttribute('data-variation');
+              const variantIndex = parseInt(variation) - 1;
+              let storedCropData = null;
+              if (
+                window.tilesetMetadata[tileType] &&
+                window.tilesetMetadata[tileType].variations[variantIndex] &&
+                window.tilesetMetadata[tileType].variations[variantIndex].cropData
+              ) {
+                storedCropData = window.tilesetMetadata[tileType].variations[variantIndex].cropData;
+              } else if (lastCropData) {
+                storedCropData = lastCropData;
+              }
+              if (storedCropData) {
+                cropper.setData(storedCropData);
+              }
+            }
+          });
+        }
+
+        // Helper function to refresh the active tile preview after a nudge.
+        function refreshActiveTilePreview() {
+          if (cropper && selectedTileCell) {
+            let canvas = cropper.getCroppedCanvas();
+            const newImage = canvas.toDataURL('image/png');
+            selectedTileCell.innerHTML = '<img src="' + newImage + '" alt="Tile Variant">';
             const tileType = selectedTileCell.getAttribute('data-tile-type');
-            const variation = selectedTileCell.getAttribute('data-variation');
-            const variantIndex = parseInt(variation) - 1;
-            let storedCropData = null;
-            if (
-              window.tilesetMetadata[tileType] &&
-              window.tilesetMetadata[tileType].variations[variantIndex] &&
-              window.tilesetMetadata[tileType].variations[variantIndex].cropData
-            ) {
-              storedCropData = window.tilesetMetadata[tileType].variations[variantIndex].cropData;
-            } else if (lastCropData) {
-              storedCropData = lastCropData;
-            }
-            if (storedCropData) {
-              cropper.setData(storedCropData);
-            }
+            const variantIndex = parseInt(selectedTileCell.getAttribute('data-variation')) - 1;
+            window.tilesetMetadata[tileType] = window.tilesetMetadata[tileType] || { variations: [] };
+            window.tilesetMetadata[tileType].variations[variantIndex] = {
+              variation: selectedTileCell.getAttribute('data-variation'),
+              imageData: newImage,
+              width: canvas.width,
+              height: canvas.height,
+              cropData: cropper.getData(true)
+            };
+            updateRoomPreview();
+          }
+        }
+
+        // Nudge controls: adjust crop box position by 1 pixel increments.
+        nudgeUpBtn.addEventListener('click', function() {
+          if (cropper) {
+            let data = cropper.getData(true);
+            data.y -= 1;
+            cropper.setData(data);
+            refreshActiveTilePreview();
           }
         });
-      }
-
-      // Helper function to refresh the active tile preview after a nudge.
-      function refreshActiveTilePreview() {
-        if (cropper && selectedTileCell) {
-          let canvas = cropper.getCroppedCanvas();
-          const newImage = canvas.toDataURL('image/png');
-          selectedTileCell.innerHTML = '<img src="' + newImage + '" alt="Tile Variant">';
-          const tileType = selectedTileCell.getAttribute('data-tile-type');
-          const variantIndex = parseInt(selectedTileCell.getAttribute('data-variation')) - 1;
-          window.tilesetMetadata[tileType] = window.tilesetMetadata[tileType] || { variations: [] };
-          window.tilesetMetadata[tileType].variations[variantIndex] = {
-            variation: selectedTileCell.getAttribute('data-variation'),
-            imageData: newImage,
-            width: canvas.width,
-            height: canvas.height,
-            cropData: cropper.getData(true)
-          };
-          updateRoomPreview();
-        }
-      }
-
-      // Nudge controls: adjust the crop box by 1 pixel increments.
-      nudgeUpBtn.addEventListener('click', function() {
-        if (cropper) {
-          let data = cropper.getData(true);
-          data.y -= 1;
-          cropper.setData(data);
-          refreshActiveTilePreview();
-        }
-      });
-      nudgeDownBtn.addEventListener('click', function() {
-        if (cropper) {
-          let data = cropper.getData(true);
-          data.y += 1;
-          cropper.setData(data);
-          refreshActiveTilePreview();
-        }
-      });
-      nudgeLeftBtn.addEventListener('click', function() {
-        if (cropper) {
-          let data = cropper.getData(true);
-          data.x -= 1;
-          cropper.setData(data);
-          refreshActiveTilePreview();
-        }
-      });
-      nudgeRightBtn.addEventListener('click', function() {
-        if (cropper) {
-          let data = cropper.getData(true);
-          data.x += 1;
-          cropper.setData(data);
-          refreshActiveTilePreview();
-        }
-      });
-
-      // Confirm crop when user clicks the Confirm Crop button.
-      confirmCropBtn.addEventListener('click', confirmCrop);
-
-      function confirmCrop() {
-        if (cropper) {
-          let canvas = cropper.getCroppedCanvas();
-          const tileType = selectedTileCell.getAttribute('data-tile-type');
-          const cropData = cropper.getData(true);
-          lastCropData = cropData;
-          if (!window.defaultTileSizes[tileType]) {
-            window.defaultTileSizes[tileType] = { width: canvas.width, height: canvas.height };
-          } else {
-            const defaultWidth = window.defaultTileSizes[tileType].width;
-            const defaultHeight = window.defaultTileSizes[tileType].height;
-            if (canvas.width !== defaultWidth || canvas.height !== defaultHeight) {
-              const offCanvas = document.createElement('canvas');
-              offCanvas.width = defaultWidth;
-              offCanvas.height = defaultHeight;
-              const offCtx = offCanvas.getContext('2d');
-              offCtx.drawImage(canvas, 0, 0, defaultWidth, defaultHeight);
-              canvas = offCanvas;
-            }
+        nudgeDownBtn.addEventListener('click', function() {
+          if (cropper) {
+            let data = cropper.getData(true);
+            data.y += 1;
+            cropper.setData(data);
+            refreshActiveTilePreview();
           }
-          const croppedDataUrl = canvas.toDataURL('image/png');
-          selectedTileCell.innerHTML = '<img src="' + croppedDataUrl + '" alt="Tile Variant">';
-          window.tilesetMetadata[tileType] = window.tilesetMetadata[tileType] || { variations: [] };
-          const variantIndex = parseInt(selectedTileCell.getAttribute('data-variation')) - 1;
-          window.tilesetMetadata[tileType].variations[variantIndex] = {
-            variation: selectedTileCell.getAttribute('data-variation'),
-            imageData: croppedDataUrl,
-            width: canvas.width,
-            height: canvas.height,
-            cropData: cropData
-          };
-          cropper.destroy();
-          cropper = null;
-          nudgeControlsContainer.style.display = 'none';
-          updateRoomPreview();
-        }
-      }
+        });
+        nudgeLeftBtn.addEventListener('click', function() {
+          if (cropper) {
+            let data = cropper.getData(true);
+            data.x -= 1;
+            cropper.setData(data);
+            refreshActiveTilePreview();
+          }
+        });
+        nudgeRightBtn.addEventListener('click', function() {
+          if (cropper) {
+            let data = cropper.getData(true);
+            data.x += 1;
+            cropper.setData(data);
+            refreshActiveTilePreview();
+          }
+        });
 
-      // Update room preview using a canvas simulating a continuous roguelike room.
-      function updateRoomPreview() {
-        const ctx = roomPreviewCanvas.getContext('2d');
-        const numRows = 5, numCols = 5;
-        const tileSize = window.defaultTileSizes["Floor"]
-          ? window.defaultTileSizes["Floor"].width
-          : 100;
-        roomPreviewCanvas.width = numCols * tileSize;
-        roomPreviewCanvas.height = numRows * tileSize;
-        ctx.clearRect(0, 0, roomPreviewCanvas.width, roomPreviewCanvas.height);
-        for (let r = 0; r < numRows; r++) {
-          for (let c = 0; c < numCols; c++) {
-            let tileType = "Floor";
-            if (r === 0 && c === 0) tileType = "NorthwestCorner";
-            else if (r === 0 && c === numCols - 1) tileType = "NortheastCorner";
-            else if (r === numRows - 1 && c === 0) tileType = "SouthwestCorner";
-            else if (r === numRows - 1 && c === numCols - 1) tileType = "SoutheastCorner";
-            else if (r === 0) tileType = "NorthWall";
-            else if (r === numRows - 1) tileType = "SouthWall";
-            else if (c === 0) tileType = "WestWall";
-            else if (c === numCols - 1) tileType = "EastWall";
-            const variant =
-              (window.tilesetMetadata[tileType] &&
-                window.tilesetMetadata[tileType].variations &&
-                window.tilesetMetadata[tileType].variations[0] &&
-                window.tilesetMetadata[tileType].variations[0].imageData) ||
-              null;
-            const x = c * tileSize;
-            const y = r * tileSize;
-            if (variant) {
-              const img = new Image();
-              img.src = variant;
-              img.onload = (function(x, y) {
-                return function() {
-                  ctx.drawImage(this, x, y, tileSize, tileSize);
-                };
-              })(x, y);
+        // Confirm crop when user clicks the Confirm Crop button.
+        confirmCropBtn.addEventListener('click', confirmCrop);
+
+        function confirmCrop() {
+          if (cropper) {
+            let canvas = cropper.getCroppedCanvas();
+            const tileType = selectedTileCell.getAttribute('data-tile-type');
+            const cropData = cropper.getData(true);
+            lastCropData = cropData;
+            if (!window.defaultTileSizes[tileType]) {
+              window.defaultTileSizes[tileType] = { width: canvas.width, height: canvas.height };
             } else {
-              ctx.fillStyle = "#999";
-              ctx.fillRect(x, y, tileSize, tileSize);
-              ctx.fillStyle = "#000";
-              ctx.font = "12px Arial";
-              ctx.fillText(tileType, x + 5, y + 15);
+              const defaultWidth = window.defaultTileSizes[tileType].width;
+              const defaultHeight = window.defaultTileSizes[tileType].height;
+              if (canvas.width !== defaultWidth || canvas.height !== defaultHeight) {
+                const offCanvas = document.createElement('canvas');
+                offCanvas.width = defaultWidth;
+                offCanvas.height = defaultHeight;
+                const offCtx = offCanvas.getContext('2d');
+                offCtx.drawImage(canvas, 0, 0, defaultWidth, defaultHeight);
+                canvas = offCanvas;
+              }
+            }
+            const croppedDataUrl = canvas.toDataURL('image/png');
+            selectedTileCell.innerHTML = '<img src="' + croppedDataUrl + '" alt="Tile Variant">';
+            window.tilesetMetadata[tileType] = window.tilesetMetadata[tileType] || { variations: [] };
+            const variantIndex = parseInt(selectedTileCell.getAttribute('data-variation')) - 1;
+            window.tilesetMetadata[tileType].variations[variantIndex] = {
+              variation: selectedTileCell.getAttribute('data-variation'),
+              imageData: croppedDataUrl,
+              width: canvas.width,
+              height: canvas.height,
+              cropData: cropData
+            };
+            cropper.destroy();
+            cropper = null;
+            nudgeControlsContainer.style.display = 'none';
+            updateRoomPreview();
+          }
+        }
+
+        // Seamless tiling: Apply offset-and-crop to all variants of a tile type.
+        function applySeamlessTilingForType(tileType) {
+          if (window.tilesetMetadata[tileType] && window.tilesetMetadata[tileType].variations) {
+            window.tilesetMetadata[tileType].variations.forEach((variant, index) => {
+              if (variant.imageData) {
+                applySeamlessTiling(variant.imageData, function(newDataUrl) {
+                  variant.imageData = newDataUrl;
+                  document.querySelectorAll('.tileCell[data-tile-type="' + tileType + '"][data-variation="' + (index + 1) + '"]').forEach(cell => {
+                    cell.innerHTML = '<img src="' + newDataUrl + '" alt="Tile Variant">';
+                  });
+                  updateRoomPreview();
+                });
+              }
+            });
+          }
+        }
+
+        // Simple offset-and-crop function to create a seamless version.
+        function applySeamlessTiling(imageDataUrl, callback) {
+          const img = new Image();
+          img.src = imageDataUrl;
+          img.onload = function() {
+            const w = img.naturalWidth;
+            const h = img.naturalHeight;
+            const offCanvas = document.createElement('canvas');
+            offCanvas.width = w * 3;
+            offCanvas.height = h * 3;
+            const offCtx = offCanvas.getContext('2d');
+            for (let i = 0; i < 3; i++) {
+              for (let j = 0; j < 3; j++) {
+                offCtx.drawImage(img, i * w, j * h, w, h);
+              }
+            }
+            const finalCanvas = document.createElement('canvas');
+            finalCanvas.width = w;
+            finalCanvas.height = h;
+            const finalCtx = finalCanvas.getContext('2d');
+            finalCtx.drawImage(offCanvas, w, h, w, h, 0, 0, w, h);
+            callback(finalCanvas.toDataURL('image/png'));
+          }
+        }
+
+        // Update room preview: Draw a 7x7 grid representing a room with doorways on all sides.
+        function updateRoomPreview() {
+          if (!roomPreviewCanvas) return;
+          const ctx = roomPreviewCanvas.getContext('2d');
+          const gridSize = 7;
+          const tileSize = window.defaultTileSizes["Floor"] ? window.defaultTileSizes["Floor"].width : 80;
+          roomPreviewCanvas.width = gridSize * tileSize;
+          roomPreviewCanvas.height = gridSize * tileSize;
+          ctx.clearRect(0, 0, roomPreviewCanvas.width, roomPreviewCanvas.height);
+          
+          for (let r = 0; r < gridSize; r++) {
+            for (let c = 0; c < gridSize; c++) {
+              let tileType = "Floor";
+              if (r === 0) {
+                if (c === 0) tileType = "NorthwestCorner";
+                else if (c === gridSize - 1) tileType = "NortheastCorner";
+                else if (c === Math.floor(gridSize / 2)) tileType = "Door";
+                else tileType = "NorthWall";
+              } else if (r === gridSize - 1) {
+                if (c === 0) tileType = "SouthwestCorner";
+                else if (c === gridSize - 1) tileType = "SoutheastCorner";
+                else if (c === Math.floor(gridSize / 2)) tileType = "Door";
+                else tileType = "SouthWall";
+              } else {
+                if (c === 0) {
+                  tileType = (r === Math.floor(gridSize / 2)) ? "Door" : "WestWall";
+                } else if (c === gridSize - 1) {
+                  tileType = (r === Math.floor(gridSize / 2)) ? "Door" : "EastWall";
+                } else {
+                  tileType = "Floor";
+                }
+              }
+              let variants = window.tilesetMetadata[tileType]?.variations;
+              let variant = null;
+              if (variants && variants.length > 0) {
+                variant = variants[Math.floor(Math.random() * variants.length)].imageData;
+              }
+              const x = c * tileSize;
+              const y = r * tileSize;
+              if (variant) {
+                const img = new Image();
+                img.src = variant;
+                img.onload = (function(x, y) {
+                  return function() {
+                    ctx.drawImage(this, x, y, tileSize, tileSize);
+                  };
+                })(x, y);
+              } else {
+                ctx.fillStyle = "#666";
+                ctx.fillRect(x, y, tileSize, tileSize);
+                ctx.fillStyle = "#fff";
+                ctx.font = "12px Segoe UI";
+                ctx.fillText(tileType, x + 5, y + 15);
+              }
             }
           }
         }
-      }
 
-      // Optionally, auto-confirm crop if user clicks outside the image preview container and tile cells.
-      document.addEventListener('click', function(e) {
-        if (cropper && !e.target.closest('#imagePreviewContainer') && !e.target.closest('.tileCell')) {
-          confirmCrop();
-        }
+        // Optional: Auto-confirm crop if user clicks outside the image preview container and tile cells.
+        document.addEventListener('click', function(e) {
+          if (cropper && !e.target.closest('#imagePreviewContainer') && !e.target.closest('.tileCell')) {
+            confirmCrop();
+          }
+        });
+
+        // Allow user to add new tile types.
+        addTileTypeBtn.addEventListener('click', function() {
+          const newType = prompt("Enter the new tile type name:");
+          if (newType && newType.trim() !== "") {
+            const section = document.createElement('div');
+            section.className = 'tileSection';
+            section.setAttribute('data-tile-type', newType);
+            const header = document.createElement('h3');
+            header.textContent = newType;
+            section.appendChild(header);
+            const container = document.createElement('div');
+            container.style.display = 'flex';
+            container.style.alignItems = 'center';
+            const row = document.createElement('div');
+            row.className = 'tileRow';
+            for (let i = 1; i <= 4; i++) {
+              const cell = document.createElement('div');
+              cell.className = 'tileCell';
+              cell.setAttribute('data-tile-type', newType);
+              cell.setAttribute('data-variation', i);
+              row.appendChild(cell);
+              cell.addEventListener('click', function() {
+                if (cropper && selectedTileCell && selectedTileCell !== this) {
+                  confirmCrop();
+                }
+                selectedTileCell = this;
+                openCropMode();
+              });
+            }
+            container.appendChild(row);
+            const seamlessBtn = document.createElement('button');
+            seamlessBtn.className = 'seamlessTypeBtn';
+            seamlessBtn.setAttribute('data-tile-type', newType);
+            seamlessBtn.textContent = 'Make Seamless';
+            container.appendChild(seamlessBtn);
+            section.appendChild(container);
+            tileSelector.appendChild(section);
+            seamlessBtn.addEventListener('click', function(e) {
+              e.stopPropagation();
+              applySeamlessTilingForType(newType);
+            });
+          }
+        });
       });
     </script>
   </body>
