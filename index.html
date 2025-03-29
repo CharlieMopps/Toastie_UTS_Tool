@@ -85,7 +85,7 @@
       .seamlessTypeBtn:hover, #addTileTypeBtn:hover {
         background: #005f99;
       }
-      /* Right column: sample image and room preview */
+      /* Right column: contains sample controls, sample image, then room preview */
       #rightColumn {
         display: flex;
         flex-direction: column;
@@ -97,6 +97,7 @@
         border-radius: 4px;
         padding: 10px;
       }
+      /* Sample controls at the top */
       #sampleControls {
         margin-bottom: 10px;
       }
@@ -112,6 +113,7 @@
       #imagePreview {
         display: block;
         width: 100%;
+        height: auto;
         max-height: 300px;
       }
       /* Crop controls overlay */
@@ -200,7 +202,7 @@
         <!-- Tile Selector -->
         <div id="tileSelector">
           <h2>Tile Variants</h2>
-          <!-- Example tile section: Floor (other sections are similar) -->
+          <!-- Example tile section: Floor (other sections omitted for brevity) -->
           <div class="tileSection" data-tile-type="Floor">
             <h3>Floor</h3>
             <div class="tileRow">
@@ -559,7 +561,7 @@
               callback();
             };
           }
-          // For Pillar: use exact diagonal quarters.
+          // Use exact diagonal quarters:
           drawQuarter(topLeft, 0, 0, halfW, halfH, 0, 0, halfW, halfH, done);
           drawQuarter(topRight, defaultSize.width - halfW, 0, halfW, halfH, halfW, 0, halfW, halfH, done);
           drawQuarter(bottomLeft, 0, defaultSize.height - halfH, halfW, halfH, 0, halfH, halfW, halfH, done);
@@ -606,25 +608,33 @@
                 else if (r === 5 && c === 4) tileType = "InnerBottomLeft";
                 else if (r === 5 && c === 5) tileType = "InnerBottomRight";
               } else {
-                tileType = null;
+                // Fallback to Floor for any cell without explicit assignment.
+                tileType = "Floor";
               }
-              if (tileType) {
-                let variants = window.tilesetMetadata[tileType]?.variations;
-                let variant = null;
-                if (variants && variants.length > 0) {
-                  variant = variants[Math.floor(Math.random() * variants.length)].imageData;
-                }
-                const x = c * tileSize;
-                const y = r * tileSize;
-                if (variant) {
-                  const img = new Image();
-                  img.src = variant;
-                  img.onload = (function(x, y) {
-                    return function() {
-                      ctx.drawImage(this, x, y, tileSize, tileSize);
-                    };
-                  })(x, y);
-                }
+              let variants = window.tilesetMetadata[tileType]?.variations;
+              let variant = null;
+              if (variants && variants.length > 0) {
+                variant = variants[Math.floor(Math.random() * variants.length)].imageData;
+              }
+              // If no variant found for a non-Floor type, fallback to Floor if available.
+              if (!variant && tileType !== "Floor" && window.tilesetMetadata["Floor"]?.variations?.length > 0) {
+                variant = window.tilesetMetadata["Floor"].variations[0].imageData;
+              }
+              const x = c * tileSize;
+              const y = r * tileSize;
+              if (variant) {
+                const img = new Image();
+                img.src = variant;
+                img.onload = (function(x, y) {
+                  return function() {
+                    ctx.drawImage(this, x, y, tileSize, tileSize);
+                  };
+                })(x, y);
+              } else {
+                // If still missing, draw the tile type as text.
+                ctx.fillStyle = "rgba(255,255,255,0.5)";
+                ctx.font = "12px Segoe UI";
+                ctx.fillText(tileType, x + 5, y + 15);
               }
             }
           }
