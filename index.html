@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Toastie UTS Tool</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css"
+      integrity="sha512-cyzxRvewl+FOKTtpBzYjW6x6IAYUCZy3sGP40hn+DQkqeluGRCax7qztK2ImL64SA+C7kVWdLI6wvdlStawhyw=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+      }
+      #imagePreview {
+        max-width: 100%;
+        max-height: 500px;
+        display: none;
+        margin-top: 10px;
+      }
+      #tileTable {
+        margin-top: 20px;
+        border-collapse: collapse;
+        width: 100%;
+      }
+      #tileTable th,
+      #tileTable td {
+        border: 1px solid #ccc;
+        padding: 10px;
+        text-align: center;
+      }
+      .tileCell {
+        cursor: pointer;
+        width: 100px;
+        height: 100px;
+      }
+      .tileCell img {
+        max-width: 100%;
+        max-height: 100%;
+      }
+      /* Room Preview Canvas */
+      #roomPreviewCanvas {
+        margin-top: 20px;
+        border: 1px solid #ccc;
+      }
+      /* Modal styles */
+      #cropModal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+      }
+      #cropContainer {
+        background: #fff;
+        padding: 10px;
+        max-width: 90%;
+        max-height: 90%;
+        overflow: auto;
+        position: relative;
+      }
+      #cropContainer img {
+        max-width: 100%;
+      }
+      #scaleSlider {
+        width: 100%;
+      }
+      #modalButtons {
+        margin-top: 10px;
+        text-align: right;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Toastie UTS Tool</h1>
+    <p>Select a sample image or upload your own:</p>
+    <select id="sampleImages">
+      <option value="">-- Select Sample Image --</option>
+      <option value="images/sample1.png">Sample 1</option>
+      <option value="images/sample2.png">Sample 2</option>
+      <!-- Add more sample images as needed -->
+    </select>
+    <input type="file" id="uploadImage" accept="image/*">
+    <br>
+    <img id="imagePreview" src="" alt="Source Image">
+
+    <h2>Tileset Configuration</h2>
+    <p>
+      Click on a cell below to define a tile variant. Each row corresponds to a tile type (Floor, North Wall, South Wall, West Wall, East Wall) and the columns represent different variations (default 4 per type). The first cropped variant for each tile type defines its default dimensions; subsequent crops are automatically scaled to match. Clicking on an already defined tile variant will re‑open the crop tool with the previous crop area.
+    </p>
+    <table id="tileTable">
+      <thead>
+        <tr>
+          <th>Tile Type</th>
+          <th>Variant 1</th>
+          <th>Variant 2</th>
+          <th>Variant 3</th>
+          <th>Variant 4</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr data-tile-type="Floor">
+          <td>Floor</td>
+          <td class="tileCell" data-tile-type="Floor" data-variation="1"></td>
+          <td class="tileCell" data-tile-type="Floor" data-variation="2"></td>
+          <td class="tileCell" data-tile-type="Floor" data-variation="3"></td>
+          <td class="tileCell" data-tile-type="Floor" data-variation="4"></td>
+        </tr>
+        <tr data-tile-type="NorthWall">
+          <td>North Wall</td>
+          <td class="tileCell" data-tile-type="NorthWall" data-variation="1"></td>
+          <td class="tileCell" data-tile-type="NorthWall" data-variation="2"></td>
+          <td class="tileCell" data-tile-type="NorthWall" data-variation="3"></td>
+          <td class="tileCell" data-tile-type="NorthWall" data-variation="4"></td>
+        </tr>
+        <tr data-tile-type="SouthWall">
+          <td>South Wall</td>
+          <td class="tileCell" data-tile-type="SouthWall" data-variation="1"></td>
+          <td class="tileCell" data-tile-type="SouthWall" data-variation="2"></td>
+          <td class="tileCell" data-tile-type="SouthWall" data-variation="3"></td>
+          <td class="tileCell" data-tile-type="SouthWall" data-variation="4"></td>
+        </tr>
+        <tr data-tile-type="WestWall">
+          <td>West Wall</td>
+          <td class="tileCell" data-tile-type="WestWall" data-variation="1"></td>
+          <td class="tileCell" data-tile-type="WestWall" data-variation="2"></td>
+          <td class="tileCell" data-tile-type="WestWall" data-variation="3"></td>
+          <td class="tileCell" data-tile-type="WestWall" data-variation="4"></td>
+        </tr>
+        <tr data-tile-type="EastWall">
+          <td>East Wall</td>
+          <td class="tileCell" data-tile-type="EastWall" data-variation="1"></td>
+          <td class="tileCell" data-tile-type="EastWall" data-variation="2"></td>
+          <td class="tileCell" data-tile-type="EastWall" data-variation="3"></td>
+          <td class="tileCell" data-tile-type="EastWall" data-variation="4"></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>Room Preview</h2>
+    <p>This preview simulates a continuous dungeon room (as used in a roguelike game) built using the defined tile variants.</p>
+    <canvas id="roomPreviewCanvas" width="500" height="500"></canvas>
+
+    <!-- Crop Modal -->
+    <div id="cropModal">
+      <div id="cropContainer">
+        <div>
+          <label for="scaleSlider">Zoom:</label>
+          <input type="range" id="scaleSlider" min="0.5" max="2" step="0.1" value="1">
+        </div>
+        <img id="cropImage" src="" alt="Crop Area">
+        <div id="modalButtons">
+          <button id="cancelCrop">Cancel</button>
+          <button id="confirmCrop">Confirm</button>
+        </div>
+      </div>
+    </div>
+
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"
+      integrity="sha512-6lplKUSl86rUVprDIjiW8DuOniNX8UDoRATqZSds/7t6zCQZfaCe3e5zcGaQwxa8Kpn5RTM9Fvl3X2lLV4grPQ=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+    <script>
+      // Global state variables
+      let currentImage = null;
+      let cropper = null;
+      let selectedTileCell = null;
+      // Global metadata: { tileType: { defaultSize: {width, height}, variations: [ ... ] } }
+      window.tilesetMetadata = {};
+      // Global default tile sizes (set on first crop per tile type)
+      window.defaultTileSizes = {};
+
+      // Elements
+      const imagePreview = document.getElementById('imagePreview');
+      const sampleImagesSelect = document.getElementById('sampleImages');
+      const uploadImageInput = document.getElementById('uploadImage');
+      const roomPreviewCanvas = document.getElementById('roomPreviewCanvas');
+
+      // Load sample image from dropdown selection
+      sampleImagesSelect.addEventListener('change', function() {
+        if (this.value) {
+          imagePreview.src = this.value;
+          imagePreview.style.display = 'block';
+          currentImage = imagePreview;
+        }
+      });
+
+      // Load user-uploaded image
+      uploadImageInput.addEventListener('change', function() {
+        const file = this.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            imagePreview.src = e.target.result;
+            imagePreview.style.display = 'block';
+            currentImage = imagePreview;
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+
+      // Handle tile cell click to open crop modal.
+      // If a variant has already been selected, restore its crop data.
+      document.querySelectorAll('.tileCell').forEach(cell => {
+        cell.addEventListener('click', function() {
+          if (!currentImage) {
+            alert('Please select or upload an image first.');
+            return;
+          }
+          selectedTileCell = this;
+          openCropModal();
+        });
+      });
+
+      // Crop modal elements
+      const cropModal = document.getElementById('cropModal');
+      const cropImage = document.getElementById('cropImage');
+      const scaleSlider = document.getElementById('scaleSlider');
+      const cancelCrop = document.getElementById('cancelCrop');
+      const confirmCrop = document.getElementById('confirmCrop');
+
+      function openCropModal() {
+        cropImage.src = currentImage.src;
+        cropModal.style.display = 'flex';
+        if (cropper) cropper.destroy();
+        cropImage.onload = function() {
+          cropper = new Cropper(cropImage, {
+            aspectRatio: 1,
+            viewMode: 1,
+            autoCropArea: 0.5
+          });
+          // If this cell already has a defined variant, pre-set the crop box.
+          const tileType = selectedTileCell.getAttribute('data-tile-type');
+          const variation = selectedTileCell.getAttribute('data-variation');
+          const variantIndex = parseInt(variation) - 1;
+          if (window.tilesetMetadata[tileType] && window.tilesetMetadata[tileType].variations[variantIndex] &&
+              window.tilesetMetadata[tileType].variations[variantIndex].cropData) {
+            const storedCropData = window.tilesetMetadata[tileType].variations[variantIndex].cropData;
+            cropper.setData(storedCropData);
+          }
+        };
+      }
+
+      // Update cropper zoom when slider changes
+      scaleSlider.addEventListener('input', function() {
+        if (cropper) cropper.zoomTo(this.value);
+      });
+
+      cancelCrop.addEventListener('click', function() {
+        cropModal.style.display = 'none';
+        if (cropper) {
+          cropper.destroy();
+          cropper = null;
+        }
+      });
+
+      confirmCrop.addEventListener('click', function() {
+        if (cropper) {
+          let canvas = cropper.getCroppedCanvas();
+          const tileType = selectedTileCell.getAttribute('data-tile-type');
+          // Get crop data (relative to the natural image size)
+          const cropData = cropper.getData(true);
+          // If this is the first variant for the tile type, record its size as default.
+          if (!window.defaultTileSizes[tileType]) {
+            window.defaultTileSizes[tileType] = { width: canvas.width, height: canvas.height };
+          } else {
+            // Scale canvas to default size if needed.
+            const defaultWidth = window.defaultTileSizes[tileType].width;
+            const defaultHeight = window.defaultTileSizes[tileType].height;
+            if (canvas.width !== defaultWidth || canvas.height !== defaultHeight) {
+              const offCanvas = document.createElement('canvas');
+              offCanvas.width = defaultWidth;
+              offCanvas.height = defaultHeight;
+              const offCtx = offCanvas.getContext('2d');
+              offCtx.drawImage(canvas, 0, 0, defaultWidth, defaultHeight);
+              canvas = offCanvas;
+            }
+          }
+          const croppedDataUrl = canvas.toDataURL('image/png');
+          selectedTileCell.innerHTML = '<img src="' + croppedDataUrl + '" alt="Tile Variant">';
+          // Save metadata for this tile variant, including the crop data.
+          window.tilesetMetadata[tileType] = window.tilesetMetadata[tileType] || { variations: [] };
+          const variantIndex = parseInt(selectedTileCell.getAttribute('data-variation')) - 1;
+          window.tilesetMetadata[tileType].variations[variantIndex] = {
+            variation: selectedTileCell.getAttribute('data-variation'),
+            imageData: croppedDataUrl,
+            width: canvas.width,
+            height: canvas.height,
+            cropData: cropData
+          };
+          cropModal.style.display = 'none';
+          cropper.destroy();
+          cropper = null;
+          updateRoomPreview();
+        }
+      });
+
+      // Update room preview using a canvas.
+      function updateRoomPreview() {
+        const ctx = roomPreviewCanvas.getContext('2d');
+        // Use a 5x5 grid for the preview.
+        const numRows = 5, numCols = 5;
+        // Use the Floor tile's default width if available, else default to 100.
+        const tileSize = window.defaultTileSizes["Floor"] ? window.defaultTileSizes["Floor"].width : 100;
+        roomPreviewCanvas.width = numCols * tileSize;
+        roomPreviewCanvas.height = numRows * tileSize;
+        ctx.clearRect(0, 0, roomPreviewCanvas.width, roomPreviewCanvas.height);
+
+        // Determine tile type per grid cell:
+        // Top row: NorthWall; Bottom row: SouthWall; Left column (excluding corners): WestWall; Right column (excluding corners): EastWall; Interior: Floor.
+        for (let r = 0; r < numRows; r++) {
+          for (let c = 0; c < numCols; c++) {
+            let tileType = "Floor";
+            if (r === 0) {
+              tileType = "NorthWall";
+            } else if (r === numRows - 1) {
+              tileType = "SouthWall";
+            }
+            if (c === 0 && r !== 0 && r !== numRows - 1) {
+              tileType = "WestWall";
+            } else if (c === numCols - 1 && r !== 0 && r !== numRows - 1) {
+              tileType = "EastWall";
+            }
+            const variant = (window.tilesetMetadata[tileType] &&
+                             window.tilesetMetadata[tileType].variations &&
+                             window.tilesetMetadata[tileType].variations[0] &&
+                             window.tilesetMetadata[tileType].variations[0].imageData) || null;
+            const x = c * tileSize;
+            const y = r * tileSize;
+            if (variant) {
+              const img = new Image();
+              img.src = variant;
+              img.onload = (function(x, y) {
+                return function() {
+                  ctx.drawImage(this, x, y, tileSize, tileSize);
+                };
+              })(x, y);
+            } else {
+              ctx.fillStyle = "#999";
+              ctx.fillRect(x, y, tileSize, tileSize);
+              ctx.fillStyle = "#000";
+              ctx.font = "12px Arial";
+              ctx.fillText(tileType, x + 5, y + 15);
+            }
+          }
+        }
+      }
+    </script>
+  </body>
+</html>
