@@ -26,13 +26,27 @@
       h1, h2, p {
         margin: 10px 0;
       }
-      /* Left column styling */
+      /* Left column styling: use flex wrap for many tile sections */
       #leftColumn {
         overflow-y: auto;
         max-height: 90vh;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+      }
+      /* Each tile section takes up a minimum width */
+      .tileSection {
+        flex: 1 1 300px;
+        background: #333;
+        padding: 10px;
+        border-radius: 4px;
+      }
+      .tileSection h3 {
+        margin-bottom: 8px;
       }
       /* Source image container */
       #sourceContainer {
+        width: 100%;
         margin-bottom: 20px;
       }
       #imagePreviewContainer {
@@ -57,7 +71,7 @@
         height: 100%;
         pointer-events: none;
       }
-      .nudgeArrow, #confirmCropBtn {
+      .nudgeArrow, #confirmCropBtn, #unlockCropSizeBtn {
         position: absolute;
         background: rgba(255, 255, 255, 0.9);
         border: none;
@@ -68,7 +82,7 @@
         pointer-events: all;
         transition: background 0.2s;
       }
-      .nudgeArrow:hover, #confirmCropBtn:hover {
+      .nudgeArrow:hover, #confirmCropBtn:hover, #unlockCropSizeBtn:hover {
         background: #ddd;
       }
       #nudgeUp {
@@ -97,7 +111,14 @@
         background: #4caf50;
         color: #fff;
       }
-      /* Right column: Room Preview container */
+      #unlockCropSizeBtn {
+        bottom: 45px;
+        right: 5px;
+        background: #f0ad4e;
+        color: #fff;
+        display: none;
+      }
+      /* Room preview container (right column) */
       #roomPreviewContainer {
         position: sticky;
         top: 20px;
@@ -106,20 +127,7 @@
         border: 2px solid #444;
         border-radius: 4px;
       }
-      /* Modern tile selector styling */
-      #tileSelector {
-        margin-top: 20px;
-      }
-      .tileSection {
-        margin-bottom: 15px;
-        padding: 10px;
-        background: #333;
-        border-radius: 4px;
-      }
-      .tileSection h3 {
-        margin-bottom: 8px;
-      }
-      /* Use CSS grid to display variants in multiple columns */
+      /* Tile variants grid within each section */
       .tileRow {
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
@@ -146,7 +154,7 @@
         max-height: 100%;
         border-radius: 2px;
       }
-      /* "Make Seamless" button for each tile section (placed below the tileRow) */
+      /* "Make Seamless" button for each tile section */
       .seamlessTypeBtn {
         margin-top: 8px;
         padding: 4px 8px;
@@ -211,13 +219,14 @@
               <button id="nudgeLeft" class="nudgeArrow">←</button>
               <button id="nudgeRight" class="nudgeArrow">→</button>
               <button id="confirmCropBtn">Confirm Crop</button>
+              <button id="unlockCropSizeBtn">Unlock Crop Size</button>
             </div>
           </div>
         </div>
         <!-- Tile Selector -->
         <div id="tileSelector">
           <h2>Tile Variants</h2>
-          <!-- Existing tile sections -->
+          <!-- Predefined tile sections -->
           <div class="tileSection" data-tile-type="Floor">
             <h3>Floor</h3>
             <div class="tileRow">
@@ -369,13 +378,21 @@
             </div>
             <button class="seamlessTypeBtn" data-tile-type="InnerBottomRight">Make Seamless</button>
           </div>
+          <!-- New Pillar type -->
+          <div class="tileSection" data-tile-type="Pillar">
+            <h3>Pillar (Auto‑Composite)</h3>
+            <div class="tileRow">
+              <div class="tileCell" data-tile-type="Pillar" data-variation="1"></div>
+            </div>
+            <button class="seamlessTypeBtn" data-tile-type="Pillar">Reset Pillar</button>
+          </div>
           <!-- Button to add new tile types -->
           <button id="addTileTypeBtn">Add New Tile Type</button>
         </div>
       </div>
       <div id="roomPreviewContainer">
         <h2>Room Preview</h2>
-        <p>This preview shows a square room with doorways on each cardinal direction.</p>
+        <p>This preview uses a multi‑ring layout. The outer ring uses wall, corner, door, and door frame tiles; the inner room has a central 2x2 square using the four inner corner tiles.</p>
         <canvas id="roomPreviewCanvas" width="800" height="800"></canvas>
       </div>
     </div>
@@ -396,6 +413,10 @@
         // Global metadata: { tileType: { defaultSize: {width, height}, variations: [ ... ] } }
         window.tilesetMetadata = {};
         window.defaultTileSizes = {};
+        // New flag for crop size lock
+        let cropSizeLocked = false;
+        // Flag to mark if the Pillar has been manually overridden
+        let pillarManuallySet = false;
 
         // Elements
         const imagePreview = document.getElementById('imagePreview');
@@ -408,11 +429,12 @@
         const nudgeRightBtn = document.getElementById('nudgeRight');
         const confirmCropBtn = document.getElementById('confirmCropBtn');
         const nudgeControlsContainer = document.getElementById('nudgeControlsContainer');
+        const unlockCropSizeBtn = document.getElementById('unlockCropSizeBtn');
         const addTileTypeBtn = document.getElementById('addTileTypeBtn');
         const tileSelector = document.getElementById('tileSelector');
 
-        // Set a smaller initial crop area (roughly one-third the size)
-        const INITIAL_AUTO_CROP_AREA = 0.17;
+        // Set initial crop area to half the previous size.
+        const INITIAL_AUTO_CROP_AREA = 0.085;
 
         // Load sample image from dropdown selection
         sampleImagesSelect.addEventListener('change', function() {
@@ -456,6 +478,7 @@
             aspectRatio: 1,
             viewMode: 1,
             autoCropArea: INITIAL_AUTO_CROP_AREA,
+            cropBoxResizable: !cropSizeLocked,
             ready() {
               const tileType = selectedTileCell.getAttribute('data-tile-type');
               const variation = selectedTileCell.getAttribute('data-variation');
@@ -477,6 +500,13 @@
           });
         }
 
+        // Unlock crop size button event
+        unlockCropSizeBtn.addEventListener('click', function() {
+          cropSizeLocked = false;
+          openCropMode();
+          unlockCropSizeBtn.style.display = 'none';
+        });
+
         // Helper function to refresh the active tile preview after a nudge.
         function refreshActiveTilePreview() {
           if (cropper && selectedTileCell) {
@@ -493,6 +523,10 @@
               height: canvas.height,
               cropData: cropper.getData(true)
             };
+            // If an inner corner tile is updated, update the pillar tile automatically.
+            if (["InnerTopLeft", "InnerTopRight", "InnerBottomLeft", "InnerBottomRight"].includes(tileType)) {
+              updatePillarTile();
+            }
             updateRoomPreview();
           }
         }
@@ -565,9 +599,16 @@
               height: canvas.height,
               cropData: cropData
             };
+            // After first confirm, lock crop size.
+            cropSizeLocked = true;
+            unlockCropSizeBtn.style.display = 'block';
             cropper.destroy();
             cropper = null;
             nudgeControlsContainer.style.display = 'none';
+            // If an inner corner tile was updated, auto-update pillar.
+            if (["InnerTopLeft", "InnerTopRight", "InnerBottomLeft", "InnerBottomRight"].includes(tileType)) {
+              updatePillarTile();
+            }
             updateRoomPreview();
           }
         }
@@ -582,6 +623,10 @@
                   document.querySelectorAll('.tileCell[data-tile-type="' + tileType + '"][data-variation="' + (index + 1) + '"]').forEach(cell => {
                     cell.innerHTML = '<img src="' + newDataUrl + '" alt="Tile Variant">';
                   });
+                  // If inner corner tile updated, update pillar.
+                  if (["InnerTopLeft", "InnerTopRight", "InnerBottomLeft", "InnerBottomRight"].includes(tileType)) {
+                    updatePillarTile();
+                  }
                   updateRoomPreview();
                 });
               }
@@ -614,37 +659,116 @@
           }
         }
 
-        // Update room preview: Draw a 7x7 grid representing a room with doorways on all sides.
+        // Update Pillar tile automatically by composing inner corner tiles.
+        // If the Pillar tile has not been manually overridden, auto-generate it.
+        function updatePillarTile() {
+          // Check if Pillar tile exists and if it's not manually set.
+          if (pillarManuallySet) return;
+          const pillarMeta = window.tilesetMetadata["Pillar"];
+          // Get inner corner tile data.
+          const topLeft = window.tilesetMetadata["InnerTopLeft"]?.variations?.[0]?.imageData;
+          const topRight = window.tilesetMetadata["InnerTopRight"]?.variations?.[0]?.imageData;
+          const bottomLeft = window.tilesetMetadata["InnerBottomLeft"]?.variations?.[0]?.imageData;
+          const bottomRight = window.tilesetMetadata["InnerBottomRight"]?.variations?.[0]?.imageData;
+          if (!topLeft || !topRight || !bottomLeft || !bottomRight) return;
+          // Use the default tile size for Pillar (use Floor size as reference)
+          const tileSize = window.defaultTileSizes["Floor"] ? window.defaultTileSizes["Floor"].width : 80;
+          const compCanvas = document.createElement('canvas');
+          compCanvas.width = tileSize;
+          compCanvas.height = tileSize;
+          const compCtx = compCanvas.getContext('2d');
+          // Helper: draw quarter of an image into a destination quarter.
+          function drawQuarter(srcDataUrl, sx, sy, sw, sh, dx, dy, dw, dh, callback) {
+            const img = new Image();
+            img.src = srcDataUrl;
+            img.onload = function() {
+              compCtx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
+              if (callback) callback();
+            };
+          }
+          // For each inner corner, take its appropriate quarter:
+          // - For InnerTopLeft, take its bottom-right quarter.
+          // - For InnerTopRight, take its bottom-left quarter.
+          // - For InnerBottomLeft, take its top-right quarter.
+          // - For InnerBottomRight, take its top-left quarter.
+          const half = tileSize / 2;
+          // We'll draw them asynchronously. For simplicity, chain callbacks.
+          drawQuarter(topLeft, tileSize/2, tileSize/2, tileSize/2, tileSize/2, 0, 0, half, half, function() {
+            drawQuarter(topRight, 0, tileSize/2, tileSize/2, tileSize/2, half, 0, half, half, function() {
+              drawQuarter(bottomLeft, tileSize/2, 0, tileSize/2, tileSize/2, 0, half, half, half, function() {
+                drawQuarter(bottomRight, 0, 0, tileSize/2, tileSize/2, half, half, half, half, function() {
+                  const pillarDataUrl = compCanvas.toDataURL('image/png');
+                  // Update the Pillar tile (variation 1) automatically.
+                  window.tilesetMetadata["Pillar"] = window.tilesetMetadata["Pillar"] || { variations: [] };
+                  window.tilesetMetadata["Pillar"].variations[0] = {
+                    variation: "1",
+                    imageData: pillarDataUrl,
+                    width: tileSize,
+                    height: tileSize,
+                    cropData: {} // Not applicable
+                  };
+                  document.querySelectorAll('.tileCell[data-tile-type="Pillar"][data-variation="1"]').forEach(cell => {
+                    cell.innerHTML = '<img src="' + pillarDataUrl + '" alt="Tile Variant">';
+                  });
+                  updateRoomPreview();
+                });
+              });
+            });
+          });
+        }
+
+        // Update room preview using a multi‑ring layout.
+        // Outer ring (grid rows 0 and 9, columns 0 and 9) uses wall, corner, door, and door frame tiles.
+        // The inner room is a 6x6 area (rows 2–7 and columns 2–7) with a central 2x2 square (rows 4–5, columns 4–5)
+        // using the four inner corner types.
         function updateRoomPreview() {
           if (!roomPreviewCanvas) return;
           const ctx = roomPreviewCanvas.getContext('2d');
-          const gridSize = 7;
+          const gridSize = 10;
+          // Use Floor tile size as reference.
           const tileSize = window.defaultTileSizes["Floor"] ? window.defaultTileSizes["Floor"].width : 80;
           roomPreviewCanvas.width = gridSize * tileSize;
           roomPreviewCanvas.height = gridSize * tileSize;
           ctx.clearRect(0, 0, roomPreviewCanvas.width, roomPreviewCanvas.height);
-          
           for (let r = 0; r < gridSize; r++) {
             for (let c = 0; c < gridSize; c++) {
               let tileType = "Floor";
+              // Outer ring
               if (r === 0) {
                 if (c === 0) tileType = "NorthwestCorner";
                 else if (c === gridSize - 1) tileType = "NortheastCorner";
-                else if (c === Math.floor(gridSize / 2)) tileType = "Door";
+                else if (c === Math.floor(gridSize/2)) tileType = "Door";
+                else if (c === Math.floor(gridSize/2)-1 || c === Math.floor(gridSize/2)+1) tileType = "DoorFrame";
                 else tileType = "NorthWall";
               } else if (r === gridSize - 1) {
                 if (c === 0) tileType = "SouthwestCorner";
                 else if (c === gridSize - 1) tileType = "SoutheastCorner";
-                else if (c === Math.floor(gridSize / 2)) tileType = "Door";
+                else if (c === Math.floor(gridSize/2)) tileType = "Door";
+                else if (c === Math.floor(gridSize/2)-1 || c === Math.floor(gridSize/2)+1) tileType = "DoorFrame";
                 else tileType = "SouthWall";
-              } else {
-                if (c === 0) {
-                  tileType = (r === Math.floor(gridSize / 2)) ? "Door" : "WestWall";
-                } else if (c === gridSize - 1) {
-                  tileType = (r === Math.floor(gridSize / 2)) ? "Door" : "EastWall";
-                } else {
-                  tileType = "Floor";
-                }
+              } else if (c === 0) {
+                if (r === Math.floor(gridSize/2)) tileType = "Door";
+                else if (r === Math.floor(gridSize/2)-1 || r === Math.floor(gridSize/2)+1) tileType = "DoorFrame";
+                else tileType = "WestWall";
+              } else if (c === gridSize - 1) {
+                if (r === Math.floor(gridSize/2)) tileType = "Door";
+                else if (r === Math.floor(gridSize/2)-1 || r === Math.floor(gridSize/2)+1) tileType = "DoorFrame";
+                else tileType = "EastWall";
+              }
+              // Inner room border (rows 2 and 7, columns 2 and 7): use inner corner tiles in center 2x2
+              else if (r === 4 || r === 5) {
+                if (c === 4) tileType = "InnerTopLeft";
+                else if (c === 5) tileType = "InnerTopRight";
+                // Let next row be inner bottom corners
+                else tileType = "Floor";
+              } else if (r === 6) {
+                if (c === 4) tileType = "InnerBottomLeft";
+                else if (c === 5) tileType = "InnerBottomRight";
+                else tileType = "Floor";
+              }
+              // Otherwise, default to Floor
+              else {
+                tileType = "Floor";
               }
               let variants = window.tilesetMetadata[tileType]?.variations;
               let variant = null;
@@ -672,7 +796,7 @@
           }
         }
 
-        // Optional: Auto-confirm crop if user clicks outside the image preview container and tile cells.
+        // Auto-confirm crop if user clicks outside the image preview container and tile cells.
         document.addEventListener('click', function(e) {
           if (cropper && !e.target.closest('#imagePreviewContainer') && !e.target.closest('.tileCell')) {
             confirmCrop();
