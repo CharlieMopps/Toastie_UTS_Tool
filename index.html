@@ -830,6 +830,7 @@
           }
         });
       });
+	  document.addEventListener('click', function(e) { if (e.target && e.target.classList.contains('seamlessTypeBtn')) { const tileType = e.target.getAttribute('data-tile-type'); console.log("Make Seamless button clicked for tile type:", tileType); applySeamlessTilingForType(tileType); e.stopPropagation(); } }); 
     </script>
   </body>
 </html>
