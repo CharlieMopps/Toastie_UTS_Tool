@@ -70,7 +70,8 @@
         max-height: 100%;
         border-radius: 2px;
       }
-      .seamlessTypeBtn, #addTileTypeBtn {
+      /* Removed seamless button styling */
+      #addTileTypeBtn {
         width: 100%;
         margin-top: 8px;
         padding: 4px 8px;
@@ -82,7 +83,7 @@
         cursor: pointer;
         transition: background 0.2s;
       }
-      .seamlessTypeBtn:hover, #addTileTypeBtn:hover {
+      #addTileTypeBtn:hover {
         background: #005f99;
       }
       /* Right column: contains sample controls, sample image, then room preview */
@@ -212,7 +213,6 @@
               <div class="tileCell" data-tile-type="Floor" data-variation="3"></div>
               <div class="tileCell" data-tile-type="Floor" data-variation="4"></div>
             </div>
-            <button class="seamlessTypeBtn" data-tile-type="Floor">Make Seamless</button>
           </div>
           <!-- North Wall -->
           <div class="tileSection" data-tile-type="NorthWall">
@@ -223,7 +223,6 @@
               <div class="tileCell" data-tile-type="NorthWall" data-variation="3"></div>
               <div class="tileCell" data-tile-type="NorthWall" data-variation="4"></div>
             </div>
-            <button class="seamlessTypeBtn" data-tile-type="NorthWall">Make Seamless</button>
           </div>
           <!-- South Wall -->
           <div class="tileSection" data-tile-type="SouthWall">
@@ -234,7 +233,6 @@
               <div class="tileCell" data-tile-type="SouthWall" data-variation="3"></div>
               <div class="tileCell" data-tile-type="SouthWall" data-variation="4"></div>
             </div>
-            <button class="seamlessTypeBtn" data-tile-type="SouthWall">Make Seamless</button>
           </div>
           <!-- West Wall -->
           <div class="tileSection" data-tile-type="WestWall">
@@ -245,7 +243,6 @@
               <div class="tileCell" data-tile-type="WestWall" data-variation="3"></div>
               <div class="tileCell" data-tile-type="WestWall" data-variation="4"></div>
             </div>
-            <button class="seamlessTypeBtn" data-tile-type="WestWall">Make Seamless</button>
           </div>
           <!-- East Wall -->
           <div class="tileSection" data-tile-type="EastWall">
@@ -256,7 +253,6 @@
               <div class="tileCell" data-tile-type="EastWall" data-variation="3"></div>
               <div class="tileCell" data-tile-type="EastWall" data-variation="4"></div>
             </div>
-            <button class="seamlessTypeBtn" data-tile-type="EastWall">Make Seamless</button>
           </div>
           <!-- Northwest Corner -->
           <div class="tileSection" data-tile-type="NorthwestCorner">
@@ -267,7 +263,6 @@
               <div class="tileCell" data-tile-type="NorthwestCorner" data-variation="3"></div>
               <div class="tileCell" data-tile-type="NorthwestCorner" data-variation="4"></div>
             </div>
-            <button class="seamlessTypeBtn" data-tile-type="NorthwestCorner">Make Seamless</button>
           </div>
           <!-- Northeast Corner -->
           <div class="tileSection" data-tile-type="NortheastCorner">
@@ -278,7 +273,6 @@
               <div class="tileCell" data-tile-type="NortheastCorner" data-variation="3"></div>
               <div class="tileCell" data-tile-type="NortheastCorner" data-variation="4"></div>
             </div>
-            <button class="seamlessTypeBtn" data-tile-type="NortheastCorner">Make Seamless</button>
           </div>
           <!-- Southwest Corner -->
           <div class="tileSection" data-tile-type="SouthwestCorner">
@@ -289,7 +283,6 @@
               <div class="tileCell" data-tile-type="SouthwestCorner" data-variation="3"></div>
               <div class="tileCell" data-tile-type="SouthwestCorner" data-variation="4"></div>
             </div>
-            <button class="seamlessTypeBtn" data-tile-type="SouthwestCorner">Make Seamless</button>
           </div>
           <!-- Southeast Corner -->
           <div class="tileSection" data-tile-type="SoutheastCorner">
@@ -300,7 +293,6 @@
               <div class="tileCell" data-tile-type="SoutheastCorner" data-variation="3"></div>
               <div class="tileCell" data-tile-type="SoutheastCorner" data-variation="4"></div>
             </div>
-            <button class="seamlessTypeBtn" data-tile-type="SoutheastCorner">Make Seamless</button>
           </div>
           <!-- Door (UI remains for reference if needed) -->
           <div class="tileSection" data-tile-type="Door">
@@ -311,7 +303,6 @@
               <div class="tileCell" data-tile-type="Door" data-variation="3"></div>
               <div class="tileCell" data-tile-type="Door" data-variation="4"></div>
             </div>
-            <button class="seamlessTypeBtn" data-tile-type="Door">Make Seamless</button>
           </div>
           <!-- Inner Corners -->
           <div class="tileSection" data-tile-type="InnerTopLeft">
@@ -322,7 +313,6 @@
               <div class="tileCell" data-tile-type="InnerTopLeft" data-variation="3"></div>
               <div class="tileCell" data-tile-type="InnerTopLeft" data-variation="4"></div>
             </div>
-            <button class="seamlessTypeBtn" data-tile-type="InnerTopLeft">Make Seamless</button>
           </div>
           <div class="tileSection" data-tile-type="InnerTopRight">
             <h3>Inner Top‑Right</h3>
@@ -332,7 +322,6 @@
               <div class="tileCell" data-tile-type="InnerTopRight" data-variation="3"></div>
               <div class="tileCell" data-tile-type="InnerTopRight" data-variation="4"></div>
             </div>
-            <button class="seamlessTypeBtn" data-tile-type="InnerTopRight">Make Seamless</button>
           </div>
           <div class="tileSection" data-tile-type="InnerBottomLeft">
             <h3>Inner Bottom‑Left</h3>
@@ -342,7 +331,6 @@
               <div class="tileCell" data-tile-type="InnerBottomLeft" data-variation="3"></div>
               <div class="tileCell" data-tile-type="InnerBottomLeft" data-variation="4"></div>
             </div>
-            <button class="seamlessTypeBtn" data-tile-type="InnerBottomLeft">Make Seamless</button>
           </div>
           <div class="tileSection" data-tile-type="InnerBottomRight">
             <h3>Inner Bottom‑Right</h3>
@@ -352,7 +340,6 @@
               <div class="tileCell" data-tile-type="InnerBottomRight" data-variation="3"></div>
               <div class="tileCell" data-tile-type="InnerBottomRight" data-variation="4"></div>
             </div>
-            <button class="seamlessTypeBtn" data-tile-type="InnerBottomRight">Make Seamless</button>
           </div>
           <!-- Pillar (Central Pillar) -->
           <div class="tileSection" data-tile-type="Pillar">
@@ -360,7 +347,6 @@
             <div class="tileRow">
               <div class="tileCell" data-tile-type="Pillar" data-variation="1"></div>
             </div>
-            <button class="seamlessTypeBtn" data-tile-type="Pillar">Update Pillar</button>
           </div>
           <button id="addTileTypeBtn">Add New Tile Type</button>
         </div>
@@ -517,9 +503,6 @@
               height: canvas.height,
               cropData: cropper.getData(true)
             };
-            if (["InnerTopLeft", "InnerTopRight", "InnerBottomLeft", "InnerBottomRight"].includes(tileType)) {
-              updatePillarTile();
-            }
             updateRoomPreview();
           }
         }
@@ -598,62 +581,8 @@
             cropper.destroy();
             cropper = null;
             nudgeControlsContainer.style.display = 'none';
-            if (["InnerTopLeft", "InnerTopRight", "InnerBottomLeft", "InnerBottomRight"].includes(tileTypeKey)) {
-              updatePillarTile();
-            }
             updateRoomPreview();
           }
-        }
-
-        function applySeamlessTilingForType(tileType) {
-          if (window.tilesetMetadata[tileType] && window.tilesetMetadata[tileType].variations) {
-            window.tilesetMetadata[tileType].variations.forEach((variant, index) => {
-              if (variant.imageData) {
-                console.log("Make Seamless clicked for", tileType, "variation", index + 1);
-                applySeamlessTiling(variant.imageData, function(newDataUrl) {
-                  console.log("New seamless image generated for", tileType, "variation", index + 1);
-                  variant.imageData = newDataUrl;
-                  document.querySelectorAll('.tileCell[data-tile-type="' + tileType + '"][data-variation="' + (index + 1) + '"]').forEach(cell => {
-                    cell.innerHTML = '<img src="' + newDataUrl + '" alt="Tile Variant">';
-                  });
-                  updateRoomPreview();
-                });
-              } else {
-                console.log("No imageData for", tileType, "variation", index + 1);
-              }
-            });
-          } else {
-            console.log("No metadata found for tile type:", tileType);
-          }
-        }
-
-        function applySeamlessTiling(imageDataUrl, callback) {
-          const img = new Image();
-          img.src = imageDataUrl;
-          img.onload = function() {
-            const w = img.naturalWidth;
-            const h = img.naturalHeight;
-            const offCanvas = document.createElement('canvas');
-            offCanvas.width = w * 3;
-            offCanvas.height = h * 3;
-            const offCtx = offCanvas.getContext('2d');
-            for (let i = 0; i < 3; i++) {
-              for (let j = 0; j < 3; j++) {
-                offCtx.drawImage(img, i * w, j * h, w, h);
-              }
-            }
-            const finalCanvas = document.createElement('canvas');
-            finalCanvas.width = w;
-            finalCanvas.height = h;
-            const finalCtx = finalCanvas.getContext('2d');
-            finalCtx.drawImage(offCanvas, w, h, w, h, 0, 0, w, h);
-            const newDataUrl = finalCanvas.toDataURL('image/png');
-            console.log("applySeamlessTiling: returning new image data");
-            callback(newDataUrl);
-          };
-          img.onerror = function(e) {
-            console.error("Error in applySeamlessTiling:", e);
-          };
         }
 
         function drawCheckeredBackground(ctx, width, height, tileSize) {
@@ -668,59 +597,6 @@
           }
         }
 
-        function updatePillarTile() {
-          const pillarKey = "Pillar";
-          const defaultSize = window.defaultTileSizes["Floor"] || { width: 80, height: 80 };
-          const topLeft = window.tilesetMetadata["InnerTopLeft"]?.variations?.[0]?.imageData;
-          const topRight = window.tilesetMetadata["InnerTopRight"]?.variations?.[0]?.imageData;
-          const bottomLeft = window.tilesetMetadata["InnerBottomLeft"]?.variations?.[0]?.imageData;
-          const bottomRight = window.tilesetMetadata["InnerBottomRight"]?.variations?.[0]?.imageData;
-          if (!topLeft || !topRight || !bottomLeft || !bottomRight) return;
-          
-          const canvas = document.createElement('canvas');
-          canvas.width = defaultSize.width;
-          canvas.height = defaultSize.height;
-          const ctx = canvas.getContext('2d');
-          const halfW = defaultSize.width / 2;
-          const halfH = defaultSize.height / 2;
-          let pending = 4;
-          function done() {
-            pending--;
-            if (pending === 0) {
-              const composite = canvas.toDataURL('image/png');
-              window.tilesetMetadata[pillarKey] = window.tilesetMetadata[pillarKey] || { variations: [] };
-              window.tilesetMetadata[pillarKey].variations[0] = {
-                variation: "1",
-                imageData: composite,
-                width: canvas.width,
-                height: canvas.height,
-                cropData: null
-              };
-              document.querySelectorAll('.tileCell[data-tile-type="Pillar"][data-variation="1"]').forEach(cell => {
-                cell.innerHTML = '<img src="' + composite + '" alt="Tile Variant">';
-              });
-              updateRoomPreview();
-            }
-          }
-          function drawQuarter(src, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight, callback) {
-            const img = new Image();
-            img.src = src;
-            img.onload = function() {
-              ctx.drawImage(img, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight);
-              callback();
-            };
-          }
-          // Use exact diagonal quarters:
-          drawQuarter(topLeft, 0, 0, halfW, halfH, 0, 0, halfW, halfH, done);
-          drawQuarter(topRight, defaultSize.width - halfW, 0, halfW, halfH, halfW, 0, halfW, halfH, done);
-          drawQuarter(bottomLeft, 0, defaultSize.height - halfH, halfW, halfH, 0, halfH, halfW, halfH, done);
-          drawQuarter(bottomRight, defaultSize.width - halfW, defaultSize.height - halfH, halfW, halfH, halfW, halfH, halfW, halfH, done);
-        }
-
-        // Updated Room Preview Layout:
-        // Outer ring: wall tiles with openings in the middle of each side (using Floor).
-        // Inner region: Floor except central 2x2 are Pillar.
-        // Extra composite Pillar example forced in cell (7,7).
         function updateRoomPreview() {
           if (!roomPreviewCanvas) return;
           const ctx = roomPreviewCanvas.getContext('2d');
@@ -734,7 +610,7 @@
           for (let r = 0; r < gridSize; r++) {
             for (let c = 0; c < gridSize; c++) {
               let tileType;
-              // Outer ring: walls with an opening (Floor) in the center of each side.
+              // Outer ring: walls with an opening (Floor) in the middle of each side.
               if (r === 0) { // top row
                 tileType = (c === 4) ? "Floor" : "NorthWall";
               } else if (r === gridSize - 1) { // bottom row
@@ -815,22 +691,11 @@
               });
             }
             container.appendChild(row);
-            const seamlessBtn = document.createElement('button');
-            seamlessBtn.className = 'seamlessTypeBtn';
-            seamlessBtn.setAttribute('data-tile-type', newType);
-            seamlessBtn.textContent = 'Make Seamless';
-            container.appendChild(seamlessBtn);
             section.appendChild(container);
             tileSelector.appendChild(section);
-            seamlessBtn.addEventListener('click', function(e) {
-              e.stopPropagation();
-              console.log("Make Seamless button clicked for tile type:", newType);
-              applySeamlessTilingForType(newType);
-            });
           }
         });
       });
-	  document.addEventListener('click', function(e) { if (e.target && e.target.classList.contains('seamlessTypeBtn')) { const tileType = e.target.getAttribute('data-tile-type'); console.log("Make Seamless button clicked for tile type:", tileType); applySeamlessTilingForType(tileType); e.stopPropagation(); } }); 
     </script>
   </body>
 </html>
