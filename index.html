@@ -3,6 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <title>Toastie UTS Tool</title>
+    <!-- 
+      Using rpg-name-generator from unpkg:
+      https://www.npmjs.com/package/rpg-name-generator
+      (c) Open source under MIT license.
+    -->
+    <script src="https://unpkg.com/rpg-name-generator@1.0.2/dist/rpg-name-generator.min.js"></script>
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css"
@@ -11,7 +17,7 @@
       referrerpolicy="no-referrer"
     />
     <style>
-      /* Grid container: left for tile selector; right for sample image and room preview */
+      /* Grid container: left for tile selector; right for sample image, room preview, and save/load controls */
       #gridContainer {
         display: grid;
         grid-template-columns: 1fr 800px;
@@ -26,20 +32,17 @@
       h1, h2, p {
         margin: 10px 0;
       }
-      /* Left column: tile selector using flex-wrap */
-      #leftColumn {
-        overflow-y: auto;
-        max-height: 90vh;
-        display: flex;
-        flex-wrap: wrap;
+      /* Left column: arrange tile sections in a CSS grid */
+      #tileSelector {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
         gap: 10px;
       }
       .tileSection {
-        width: 300px;
-        margin-bottom: 10px;
-        padding: 10px;
         background: #333;
         border-radius: 4px;
+        padding: 10px;
+        position: relative;
       }
       .tileSection h3 {
         margin-bottom: 8px;
@@ -59,8 +62,8 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: transform 0.1s;
         position: relative;
+        transition: transform 0.1s;
       }
       .tileCell:hover {
         transform: scale(1.05);
@@ -70,7 +73,22 @@
         max-height: 100%;
         border-radius: 2px;
       }
-      /* Removed seamless button styling */
+      /* Clear button (only added once a tile is set) */
+      .clearButton {
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        background: rgba(255, 0, 0, 0.8);
+        border: none;
+        color: #fff;
+        font-size: 10px;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        cursor: pointer;
+        z-index: 2;
+      }
+      /* "Add New Tile Type" button */
       #addTileTypeBtn {
         width: 100%;
         margin-top: 8px;
@@ -86,7 +104,7 @@
       #addTileTypeBtn:hover {
         background: #005f99;
       }
-      /* Right column: contains sample controls, sample image, then room preview */
+      /* Right column: sample image, room preview, and save/load controls */
       #rightColumn {
         display: flex;
         flex-direction: column;
@@ -98,7 +116,7 @@
         border-radius: 4px;
         padding: 10px;
       }
-      /* Sample controls at the top */
+      /* Sample controls */
       #sampleControls {
         margin-bottom: 10px;
       }
@@ -111,11 +129,12 @@
         position: relative;
         display: block;
       }
+      /* Double size sample image */
       #imagePreview {
         display: block;
         width: 100%;
         height: auto;
-        max-height: 300px;
+        max-height: 600px;
         object-fit: contain;
       }
       /* Crop controls overlay */
@@ -175,15 +194,67 @@
         color: #fff;
         display: none;
       }
-      /* Room preview container */
+      /* Room preview */
       #roomPreviewContainer {
         position: relative;
       }
+      /* Double size preview canvas */
       #roomPreviewCanvas {
         border: 2px solid #444;
         border-radius: 4px;
       }
-      /* Scrollbar for left column */
+      /* Save/Load Controls */
+      #saveControls {
+        margin-top: 10px;
+      }
+      #tilesetName {
+        width: 100%;
+        padding: 6px;
+        font-size: 14px;
+        border-radius: 4px;
+        border: 1px solid #555;
+        margin-bottom: 5px;
+      }
+      /* New Random Name button */
+      #randomNameBtn {
+        width: 100%;
+        padding: 6px;
+        font-size: 14px;
+        background: #008000;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background 0.2s;
+        margin-bottom: 5px;
+      }
+      #randomNameBtn:hover {
+        background: #005000;
+      }
+      #saveTilesetBtn,
+      #loadTilesetBtn {
+        width: 100%;
+        padding: 6px;
+        font-size: 14px;
+        background: #007acc;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background 0.2s;
+        margin-bottom: 5px;
+      }
+      #saveTilesetBtn:hover,
+      #loadTilesetBtn:hover {
+        background: #005f99;
+      }
+      #loadTilesetInput {
+        display: none;
+      }
+      /* Left column scrollbar */
+      #leftColumn {
+        overflow-y: auto;
+      }
       #leftColumn::-webkit-scrollbar {
         width: 8px;
       }
@@ -201,9 +272,9 @@
     <h1>Toastie UTS Tool</h1>
     <div id="gridContainer">
       <div id="leftColumn">
-        <!-- Tile Selector with all tile sections -->
         <div id="tileSelector">
           <h2>Tile Variants</h2>
+          <!-- All tile sections -->
           <!-- Floor -->
           <div class="tileSection" data-tile-type="Floor">
             <h3>Floor</h3>
@@ -214,9 +285,9 @@
               <div class="tileCell" data-tile-type="Floor" data-variation="4"></div>
             </div>
           </div>
-          <!-- North Wall -->
+          <!-- NorthWall -->
           <div class="tileSection" data-tile-type="NorthWall">
-            <h3>North Wall</h3>
+            <h3>NorthWall</h3>
             <div class="tileRow">
               <div class="tileCell" data-tile-type="NorthWall" data-variation="1"></div>
               <div class="tileCell" data-tile-type="NorthWall" data-variation="2"></div>
@@ -224,9 +295,9 @@
               <div class="tileCell" data-tile-type="NorthWall" data-variation="4"></div>
             </div>
           </div>
-          <!-- South Wall -->
+          <!-- SouthWall -->
           <div class="tileSection" data-tile-type="SouthWall">
-            <h3>South Wall</h3>
+            <h3>SouthWall</h3>
             <div class="tileRow">
               <div class="tileCell" data-tile-type="SouthWall" data-variation="1"></div>
               <div class="tileCell" data-tile-type="SouthWall" data-variation="2"></div>
@@ -234,9 +305,9 @@
               <div class="tileCell" data-tile-type="SouthWall" data-variation="4"></div>
             </div>
           </div>
-          <!-- West Wall -->
+          <!-- WestWall -->
           <div class="tileSection" data-tile-type="WestWall">
-            <h3>West Wall</h3>
+            <h3>WestWall</h3>
             <div class="tileRow">
               <div class="tileCell" data-tile-type="WestWall" data-variation="1"></div>
               <div class="tileCell" data-tile-type="WestWall" data-variation="2"></div>
@@ -244,9 +315,9 @@
               <div class="tileCell" data-tile-type="WestWall" data-variation="4"></div>
             </div>
           </div>
-          <!-- East Wall -->
+          <!-- EastWall -->
           <div class="tileSection" data-tile-type="EastWall">
-            <h3>East Wall</h3>
+            <h3>EastWall</h3>
             <div class="tileRow">
               <div class="tileCell" data-tile-type="EastWall" data-variation="1"></div>
               <div class="tileCell" data-tile-type="EastWall" data-variation="2"></div>
@@ -254,9 +325,9 @@
               <div class="tileCell" data-tile-type="EastWall" data-variation="4"></div>
             </div>
           </div>
-          <!-- Northwest Corner -->
+          <!-- NorthwestCorner -->
           <div class="tileSection" data-tile-type="NorthwestCorner">
-            <h3>Northwest Corner</h3>
+            <h3>NorthwestCorner</h3>
             <div class="tileRow">
               <div class="tileCell" data-tile-type="NorthwestCorner" data-variation="1"></div>
               <div class="tileCell" data-tile-type="NorthwestCorner" data-variation="2"></div>
@@ -264,9 +335,9 @@
               <div class="tileCell" data-tile-type="NorthwestCorner" data-variation="4"></div>
             </div>
           </div>
-          <!-- Northeast Corner -->
+          <!-- NortheastCorner -->
           <div class="tileSection" data-tile-type="NortheastCorner">
-            <h3>Northeast Corner</h3>
+            <h3>NortheastCorner</h3>
             <div class="tileRow">
               <div class="tileCell" data-tile-type="NortheastCorner" data-variation="1"></div>
               <div class="tileCell" data-tile-type="NortheastCorner" data-variation="2"></div>
@@ -274,9 +345,9 @@
               <div class="tileCell" data-tile-type="NortheastCorner" data-variation="4"></div>
             </div>
           </div>
-          <!-- Southwest Corner -->
+          <!-- SouthwestCorner -->
           <div class="tileSection" data-tile-type="SouthwestCorner">
-            <h3>Southwest Corner</h3>
+            <h3>SouthwestCorner</h3>
             <div class="tileRow">
               <div class="tileCell" data-tile-type="SouthwestCorner" data-variation="1"></div>
               <div class="tileCell" data-tile-type="SouthwestCorner" data-variation="2"></div>
@@ -284,9 +355,9 @@
               <div class="tileCell" data-tile-type="SouthwestCorner" data-variation="4"></div>
             </div>
           </div>
-          <!-- Southeast Corner -->
+          <!-- SoutheastCorner -->
           <div class="tileSection" data-tile-type="SoutheastCorner">
-            <h3>Southeast Corner</h3>
+            <h3>SoutheastCorner</h3>
             <div class="tileRow">
               <div class="tileCell" data-tile-type="SoutheastCorner" data-variation="1"></div>
               <div class="tileCell" data-tile-type="SoutheastCorner" data-variation="2"></div>
@@ -294,7 +365,7 @@
               <div class="tileCell" data-tile-type="SoutheastCorner" data-variation="4"></div>
             </div>
           </div>
-          <!-- Door (UI remains for reference if needed) -->
+          <!-- Door -->
           <div class="tileSection" data-tile-type="Door">
             <h3>Door</h3>
             <div class="tileRow">
@@ -304,9 +375,9 @@
               <div class="tileCell" data-tile-type="Door" data-variation="4"></div>
             </div>
           </div>
-          <!-- Inner Corners -->
+          <!-- InnerTopLeft -->
           <div class="tileSection" data-tile-type="InnerTopLeft">
-            <h3>Inner Top‑Left</h3>
+            <h3>InnerTopLeft</h3>
             <div class="tileRow">
               <div class="tileCell" data-tile-type="InnerTopLeft" data-variation="1"></div>
               <div class="tileCell" data-tile-type="InnerTopLeft" data-variation="2"></div>
@@ -314,8 +385,9 @@
               <div class="tileCell" data-tile-type="InnerTopLeft" data-variation="4"></div>
             </div>
           </div>
+          <!-- InnerTopRight -->
           <div class="tileSection" data-tile-type="InnerTopRight">
-            <h3>Inner Top‑Right</h3>
+            <h3>InnerTopRight</h3>
             <div class="tileRow">
               <div class="tileCell" data-tile-type="InnerTopRight" data-variation="1"></div>
               <div class="tileCell" data-tile-type="InnerTopRight" data-variation="2"></div>
@@ -323,8 +395,9 @@
               <div class="tileCell" data-tile-type="InnerTopRight" data-variation="4"></div>
             </div>
           </div>
+          <!-- InnerBottomLeft -->
           <div class="tileSection" data-tile-type="InnerBottomLeft">
-            <h3>Inner Bottom‑Left</h3>
+            <h3>InnerBottomLeft</h3>
             <div class="tileRow">
               <div class="tileCell" data-tile-type="InnerBottomLeft" data-variation="1"></div>
               <div class="tileCell" data-tile-type="InnerBottomLeft" data-variation="2"></div>
@@ -332,8 +405,9 @@
               <div class="tileCell" data-tile-type="InnerBottomLeft" data-variation="4"></div>
             </div>
           </div>
+          <!-- InnerBottomRight -->
           <div class="tileSection" data-tile-type="InnerBottomRight">
-            <h3>Inner Bottom‑Right</h3>
+            <h3>InnerBottomRight</h3>
             <div class="tileRow">
               <div class="tileCell" data-tile-type="InnerBottomRight" data-variation="1"></div>
               <div class="tileCell" data-tile-type="InnerBottomRight" data-variation="2"></div>
@@ -341,7 +415,7 @@
               <div class="tileCell" data-tile-type="InnerBottomRight" data-variation="4"></div>
             </div>
           </div>
-          <!-- Pillar (Central Pillar) -->
+          <!-- Pillar -->
           <div class="tileSection" data-tile-type="Pillar">
             <h3>Pillar (Auto‑Composite)</h3>
             <div class="tileRow">
@@ -352,7 +426,7 @@
         </div>
       </div>
       <div id="rightColumn">
-        <!-- Sample Image Container with Controls -->
+        <!-- Sample Image Container -->
         <div id="sampleContainer">
           <div id="sampleControls">
             <p>Select a sample image or upload your own:</p>
@@ -380,10 +454,45 @@
           <h2>Room Preview</h2>
           <p>
             The preview represents a square room with passageways on all four sides.
-            The outer border consists of wall tiles (with an opening in the middle of each side).
-            The inner area is mostly Floor, except for a central 2×2 pillar and an extra composite Pillar example.
+            The outer border is set as follows:
+            <br>
+            • Top row (r = 0): Cell 0 is NorthwestCorner; cells 1–2 are NorthWall;
+            cells 3–5 form the top passageway using:
+              InnerBottomRight at cell 3, Floor at cell 4, and InnerBottomLeft at cell 5;
+            cells 6–7 are NorthWall; cell 8 is NortheastCorner.
+            <br>
+            • Bottom row (r = 8): Cell 0 is SouthwestCorner; cells 1–2 are SouthWall;
+            cells 3–5 form the bottom passageway using:
+              InnerTopRight at cell 3, Floor at cell 4, and InnerTopLeft at cell 5;
+            cells 6–7 are SouthWall; cell 8 is SoutheastCorner.
+            <br>
+            • Left column (c = 0): Cell 0 is NorthwestCorner; cells 1–2 are WestWall;
+            rows 3–5 form the left passageway using:
+              InnerBottomRight at row 3, Floor at row 4, and InnerTopRight at row 5;
+            cells 6–7 are WestWall; cell 8 is SouthwestCorner.
+            <br>
+            • Right column (c = 8): Cell 0 is NortheastCorner; cells 1–2 are EastWall;
+            rows 3–5 form the right passageway using:
+              InnerBottomLeft at row 3, Floor at row 4, and InnerTopLeft at row 5;
+            cells 6–7 are EastWall; cell 8 is SoutheastCorner.
+            <br>
+            • Central pillar: The central 2×2 (cells [4,4], [4,5], [5,4], [5,5]) is composed of:
+              InnerTopLeft at (4,4), InnerTopRight at (4,5),
+              InnerBottomLeft at (5,4), and InnerBottomRight at (5,5).
+            <br>
+            • An extra Pillar is forced at cell (7,7).
           </p>
-          <canvas id="roomPreviewCanvas" width="800" height="800"></canvas>
+          <canvas id="roomPreviewCanvas" width="1600" height="1600"></canvas>
+        </div>
+        <!-- Save/Load Controls -->
+        <div id="saveControls">
+          <h2>Save/Load Tileset</h2>
+          <input type="text" id="tilesetName" placeholder="Enter tileset name" />
+          <button id="randomNameBtn">Random Name</button>
+          <button id="saveTilesetBtn">Save Tileset as PNG</button>
+          <br>
+          <button id="loadTilesetBtn">Load Tileset from PNG</button>
+          <input type="file" id="loadTilesetInput" accept="image/png">
         </div>
       </div>
     </div>
@@ -395,6 +504,119 @@
       referrerpolicy="no-referrer"
     ></script>
     <script>
+      // Utility functions for converting between data URL and Uint8Array.
+      function dataURLToUint8Array(dataUrl) {
+        const base64 = dataUrl.split(',')[1];
+        const binary_string = atob(base64);
+        const len = binary_string.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+          bytes[i] = binary_string.charCodeAt(i);
+        }
+        return bytes;
+      }
+      function uint8ArrayToDataURL(uint8Array) {
+        let binary = '';
+        for (let i = 0; i < uint8Array.length; i++) {
+          binary += String.fromCharCode(uint8Array[i]);
+        }
+        const base64 = btoa(binary);
+        return 'data:image/png;base64,' + base64;
+      }
+      // Minimal CRC32 implementation.
+      function makeCRCTable() {
+        let c;
+        const crcTable = [];
+        for (let n = 0; n < 256; n++) {
+          c = n;
+          for (let k = 0; k < 8; k++) {
+            c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+          }
+          crcTable[n] = c;
+        }
+        return crcTable;
+      }
+      const crcTable = makeCRCTable();
+      function crc32(buf) {
+        let crc = 0 ^ (-1);
+        for (let i = 0; i < buf.length; i++) {
+          crc = (crc >>> 8) ^ crcTable[(crc ^ buf[i]) & 0xFF];
+        }
+        return (crc ^ (-1)) >>> 0;
+      }
+      // embedMetadata: Inserts a tEXt chunk with keyword "TilesetMetadata" and the JSON metadata.
+      function embedMetadata(pngDataUrl, metadata) {
+        const pngBytes = dataURLToUint8Array(pngDataUrl);
+        const keyword = "TilesetMetadata";
+        const textEncoder = new TextEncoder();
+        const textBytes = textEncoder.encode(keyword + "\0" + metadata);
+        const textLength = textBytes.length;
+        const chunkBuffer = new Uint8Array(4 + 4 + textLength + 4);
+        // Write length
+        chunkBuffer[0] = (textLength >>> 24) & 0xFF;
+        chunkBuffer[1] = (textLength >>> 16) & 0xFF;
+        chunkBuffer[2] = (textLength >>> 8) & 0xFF;
+        chunkBuffer[3] = textLength & 0xFF;
+        // Write type "tEXt"
+        const typeStr = "tEXt";
+        for (let i = 0; i < 4; i++) {
+          chunkBuffer[4 + i] = typeStr.charCodeAt(i);
+        }
+        // Copy textBytes
+        chunkBuffer.set(textBytes, 8);
+        // Calculate CRC for chunk type and data
+        const crcVal = crc32(chunkBuffer.slice(4, 8 + textLength));
+        chunkBuffer[8 + textLength] = (crcVal >>> 24) & 0xFF;
+        chunkBuffer[9 + textLength] = (crcVal >>> 16) & 0xFF;
+        chunkBuffer[10 + textLength] = (crcVal >>> 8) & 0xFF;
+        chunkBuffer[11 + textLength] = crcVal & 0xFF;
+        // Find IEND chunk position
+        let pos = 8;
+        let iendIndex = pngBytes.length;
+        while (pos < pngBytes.length) {
+          const len = (pngBytes[pos] << 24) | (pngBytes[pos+1] << 16) | (pngBytes[pos+2] << 8) | pngBytes[pos+3];
+          const type = String.fromCharCode(pngBytes[pos+4], pngBytes[pos+5], pngBytes[pos+6], pngBytes[pos+7]);
+          if (type === "IEND") {
+            iendIndex = pos;
+            break;
+          }
+          pos += 8 + len + 4;
+        }
+        // Insert the new chunk before IEND
+        const newPng = new Uint8Array(pngBytes.length + chunkBuffer.length);
+        newPng.set(pngBytes.slice(0, iendIndex), 0);
+        newPng.set(chunkBuffer, iendIndex);
+        newPng.set(pngBytes.slice(iendIndex), iendIndex + chunkBuffer.length);
+        return uint8ArrayToDataURL(newPng);
+      }
+      // parseMetadata: Extracts metadata from a tEXt chunk with keyword "TilesetMetadata"
+      function parseMetadata(pngDataUrl) {
+        const pngBytes = dataURLToUint8Array(pngDataUrl);
+        let pos = 8;
+        while (pos < pngBytes.length) {
+          const len = (pngBytes[pos] << 24) | (pngBytes[pos+1] << 16) | (pngBytes[pos+2] << 8) | pngBytes[pos+3];
+          const type = String.fromCharCode(pngBytes[pos+4], pngBytes[pos+5], pngBytes[pos+6], pngBytes[pos+7]);
+          if (type === "tEXt") {
+            const textData = pngBytes.slice(pos+8, pos+8+len);
+            const text = new TextDecoder().decode(textData);
+            const parts = text.split("\0");
+            if (parts[0] === "TilesetMetadata") {
+              return parts.slice(1).join("\0");
+            }
+          }
+          pos += 8 + len + 4;
+        }
+        return "";
+      }
+      function downloadDataUrl(dataUrl, filename) {
+        const link = document.createElement("a");
+        link.href = dataUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+
       document.addEventListener('DOMContentLoaded', function() {
         let currentImage = null;
         let cropper = null;
@@ -417,8 +639,30 @@
         const unlockCropSizeBtn = document.getElementById('unlockCropSizeBtn');
         const addTileTypeBtn = document.getElementById('addTileTypeBtn');
         const tileSelector = document.getElementById('tileSelector');
+        const saveTilesetBtn = document.getElementById('saveTilesetBtn');
+        const loadTilesetBtn = document.getElementById('loadTilesetBtn');
+        const loadTilesetInput = document.getElementById('loadTilesetInput');
+        const tilesetNameInput = document.getElementById('tilesetName');
+        const randomNameBtn = document.getElementById('randomNameBtn');
 
         const INITIAL_AUTO_CROP_AREA = 0.085;
+
+        // Generate a random tileset name using rpg-name-generator.
+        function generateRandomTilesetName() {
+          if (typeof rpgNameGenerator !== "undefined" && typeof rpgNameGenerator.generate === "function") {
+            // Use a random seed for each call.
+            const seed = Math.random().toString(36).substring(2, 10);
+            const name = rpgNameGenerator.generate({ seed: seed });
+            return name;
+          }
+          return "Dungeon of Doom";
+        }
+        // Pre-populate the tileset name field on page load.
+        tilesetNameInput.value = generateRandomTilesetName();
+        // When the "Random Name" button is clicked, generate and set a new name.
+        randomNameBtn.addEventListener('click', function() {
+          tilesetNameInput.value = generateRandomTilesetName();
+        });
 
         sampleImagesSelect.addEventListener('change', function() {
           if (this.value) {
@@ -427,7 +671,6 @@
             currentImage = imagePreview;
           }
         });
-
         uploadImageInput.addEventListener('change', function() {
           const file = this.files[0];
           if (file) {
@@ -441,15 +684,20 @@
           }
         });
 
-        document.querySelectorAll('.tileCell').forEach(cell => {
-          cell.addEventListener('click', function() {
-            if (cropper && selectedTileCell && selectedTileCell !== this) {
-              confirmCrop();
-            }
-            selectedTileCell = this;
-            openCropMode();
+        function setupTileCells() {
+          document.querySelectorAll('.tileCell').forEach(cell => {
+            cell.removeEventListener('click', tileCellClickHandler);
+            cell.addEventListener('click', tileCellClickHandler);
           });
-        });
+        }
+        function tileCellClickHandler() {
+          if (cropper && selectedTileCell && selectedTileCell !== this) {
+            confirmCrop();
+          }
+          selectedTileCell = this;
+          openCropMode();
+        }
+        setupTileCells();
 
         function openCropMode() {
           nudgeControlsContainer.style.display = 'block';
@@ -488,16 +736,45 @@
           });
         }
 
+        function addClearButton(cell) {
+          const existingClear = cell.querySelector('.clearButton');
+          if (existingClear) {
+            existingClear.remove();
+          }
+          if (cell.innerHTML.indexOf("img") !== -1) {
+            const clearBtn = document.createElement('button');
+            clearBtn.textContent = "X";
+            clearBtn.className = "clearButton";
+            clearBtn.addEventListener('click', function(e) {
+              e.stopPropagation();
+              cell.innerHTML = "";
+              const tileType = cell.getAttribute('data-tile-type');
+              const idx = parseInt(cell.getAttribute('data-variation')) - 1;
+              window.tilesetMetadata[tileType] = window.tilesetMetadata[tileType] || { variations: [] };
+              window.tilesetMetadata[tileType].variations[idx] = {
+                variation: cell.getAttribute('data-variation'),
+                imageData: "",
+                width: 0,
+                height: 0,
+                cropData: null
+              };
+              updateRoomPreview();
+            });
+            cell.appendChild(clearBtn);
+          }
+        }
+
         function refreshActiveTilePreview() {
           if (cropper && selectedTileCell) {
             let canvas = cropper.getCroppedCanvas();
             const newImage = canvas.toDataURL('image/png');
             selectedTileCell.innerHTML = '<img src="' + newImage + '" alt="Tile Variant">';
+            addClearButton(selectedTileCell);
             const tileType = selectedTileCell.getAttribute('data-tile-type');
             const variantIndex = parseInt(selectedTileCell.getAttribute('data-variation')) - 1;
             window.tilesetMetadata[tileType] = window.tilesetMetadata[tileType] || { variations: [] };
             window.tilesetMetadata[tileType].variations[variantIndex] = {
-              variation: selectedTileCell.getAttribute('data-variation'),
+              variation: selectedTileCell.getAttribute('data-tile-type'),
               imageData: newImage,
               width: canvas.width,
               height: canvas.height,
@@ -564,11 +841,12 @@
             }
             const croppedDataUrl = canvas.toDataURL('image/png');
             selectedTileCell.innerHTML = '<img src="' + croppedDataUrl + '" alt="Tile Variant">';
+            addClearButton(selectedTileCell);
             const tileTypeKey = selectedTileCell.getAttribute('data-tile-type');
             window.tilesetMetadata[tileTypeKey] = window.tilesetMetadata[tileTypeKey] || { variations: [] };
             const variantIndex = parseInt(selectedTileCell.getAttribute('data-variation')) - 1;
             window.tilesetMetadata[tileTypeKey].variations[variantIndex] = {
-              variation: selectedTileCell.getAttribute('data-variation'),
+              variation: selectedTileCell.getAttribute('data-tile-type'),
               imageData: croppedDataUrl,
               width: canvas.width,
               height: canvas.height,
@@ -597,6 +875,7 @@
           }
         }
 
+        // Room Preview Layout (unchanged)
         function updateRoomPreview() {
           if (!roomPreviewCanvas) return;
           const ctx = roomPreviewCanvas.getContext('2d');
@@ -610,25 +889,68 @@
           for (let r = 0; r < gridSize; r++) {
             for (let c = 0; c < gridSize; c++) {
               let tileType;
-              // Outer ring: walls with an opening (Floor) in the middle of each side.
               if (r === 0) { // top row
-                tileType = (c === 4) ? "Floor" : "NorthWall";
+                if (c === 0) {
+                  tileType = "NorthwestCorner";
+                } else if (c === gridSize - 1) {
+                  tileType = "NortheastCorner";
+                } else if (c >= 3 && c <= 5) { // top passageway
+                  if (c === 3) tileType = "InnerBottomRight";
+                  else if (c === 5) tileType = "InnerBottomLeft";
+                  else tileType = "Floor";
+                } else {
+                  tileType = "NorthWall";
+                }
               } else if (r === gridSize - 1) { // bottom row
-                tileType = (c === 4) ? "Floor" : "SouthWall";
+                if (c === 0) {
+                  tileType = "SouthwestCorner";
+                } else if (c === gridSize - 1) {
+                  tileType = "SoutheastCorner";
+                } else if (c >= 3 && c <= 5) { // bottom passageway
+                  if (c === 3) tileType = "InnerTopRight";
+                  else if (c === 5) tileType = "InnerTopLeft";
+                  else tileType = "Floor";
+                } else {
+                  tileType = "SouthWall";
+                }
               } else if (c === 0) { // left column
-                tileType = (r === 4) ? "Floor" : "WestWall";
+                if (r === 0 || r === gridSize - 1) {
+                  tileType = undefined;
+                } else if (r >= 3 && r <= 5) { // left passageway
+                  if (r === 3) tileType = "InnerBottomRight";
+                  else if (r === 5) tileType = "InnerTopRight";
+                  else tileType = "Floor";
+                } else {
+                  tileType = "WestWall";
+                }
               } else if (c === gridSize - 1) { // right column
-                tileType = (r === 4) ? "Floor" : "EastWall";
+                if (r === 0 || r === gridSize - 1) {
+                  tileType = undefined;
+                } else if (r >= 3 && r <= 5) { // right passageway
+                  if (r === 3) tileType = "InnerBottomLeft";
+                  else if (r === 5) tileType = "InnerTopLeft";
+                  else tileType = "Floor";
+                } else {
+                  tileType = "EastWall";
+                }
               } else {
-                // Inner region: central 2x2 are Pillar; extra Pillar example at (7,7); rest are Floor.
-                if (r >= 4 && r <= 5 && c >= 4 && c <= 5) {
-                  tileType = "Pillar";
+                // Inner region
+                if (r === 4 && c === 4) {
+                  tileType = "InnerTopLeft";
+                } else if (r === 4 && c === 5) {
+                  tileType = "InnerTopRight";
+                } else if (r === 5 && c === 4) {
+                  tileType = "InnerBottomLeft";
+                } else if (r === 5 && c === 5) {
+                  tileType = "InnerBottomRight";
                 } else if (r === 7 && c === 7) {
                   tileType = "Pillar";
                 } else {
                   tileType = "Floor";
                 }
               }
+              if (!tileType) continue;
+              
               let variants = window.tilesetMetadata[tileType]?.variations;
               let variant = null;
               if (variants && variants.length > 0) {
@@ -693,8 +1015,121 @@
             container.appendChild(row);
             section.appendChild(container);
             tileSelector.appendChild(section);
+            setupTileCells();
           }
         });
+
+        // Save Tileset: embed metadata and trigger download
+        saveTilesetBtn.addEventListener('click', function() {
+          const tilesetName = tilesetNameInput.value.trim() || "tileset";
+          const pngDataUrl = roomPreviewCanvas.toDataURL("image/png");
+          const metadata = JSON.stringify(window.tilesetMetadata);
+          const pngWithMetadata = embedMetadata(pngDataUrl, metadata);
+          downloadDataUrl(pngWithMetadata, tilesetName + ".png");
+        });
+
+        // Load Tileset: extract metadata and populate empty tile cells
+        loadTilesetBtn.addEventListener('click', function() {
+          loadTilesetInput.click();
+        });
+        loadTilesetInput.addEventListener('change', function() {
+          const file = this.files[0];
+          if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+              const dataUrl = e.target.result;
+              const metadata = parseMetadata(dataUrl);
+              if (metadata) {
+                window.tilesetMetadata = JSON.parse(metadata);
+                document.querySelectorAll('.tileCell').forEach(cell => {
+                  const type = cell.getAttribute('data-tile-type');
+                  const idx = parseInt(cell.getAttribute('data-variation')) - 1;
+                  if (!cell.innerHTML && window.tilesetMetadata[type] && window.tilesetMetadata[type].variations[idx] && window.tilesetMetadata[type].variations[idx].imageData) {
+                    cell.innerHTML = '<img src="' + window.tilesetMetadata[type].variations[idx].imageData + '" alt="Tile Variant">';
+                    addClearButton(cell);
+                  }
+                });
+                updateRoomPreview();
+              } else {
+                console.error("No metadata found in the loaded PNG.");
+              }
+            };
+            reader.readAsDataURL(file);
+          }
+        });
+
+        // embedMetadata: Inserts a tEXt chunk with keyword "TilesetMetadata" and the JSON metadata.
+        function embedMetadata(pngDataUrl, metadata) {
+          const pngBytes = dataURLToUint8Array(pngDataUrl);
+          const keyword = "TilesetMetadata";
+          const textEncoder = new TextEncoder();
+          const textBytes = textEncoder.encode(keyword + "\0" + metadata);
+          const textLength = textBytes.length;
+          const chunkBuffer = new Uint8Array(4 + 4 + textLength + 4);
+          // Write length
+          chunkBuffer[0] = (textLength >>> 24) & 0xFF;
+          chunkBuffer[1] = (textLength >>> 16) & 0xFF;
+          chunkBuffer[2] = (textLength >>> 8) & 0xFF;
+          chunkBuffer[3] = textLength & 0xFF;
+          // Write type "tEXt"
+          const typeStr = "tEXt";
+          for (let i = 0; i < 4; i++) {
+            chunkBuffer[4 + i] = typeStr.charCodeAt(i);
+          }
+          // Copy textBytes
+          chunkBuffer.set(textBytes, 8);
+          // Calculate CRC for chunk type and data
+          const crcVal = crc32(chunkBuffer.slice(4, 8 + textLength));
+          chunkBuffer[8 + textLength] = (crcVal >>> 24) & 0xFF;
+          chunkBuffer[9 + textLength] = (crcVal >>> 16) & 0xFF;
+          chunkBuffer[10 + textLength] = (crcVal >>> 8) & 0xFF;
+          chunkBuffer[11 + textLength] = crcVal & 0xFF;
+          // Find IEND chunk position
+          let pos = 8;
+          let iendIndex = pngBytes.length;
+          while (pos < pngBytes.length) {
+            const len = (pngBytes[pos] << 24) | (pngBytes[pos+1] << 16) | (pngBytes[pos+2] << 8) | pngBytes[pos+3];
+            const type = String.fromCharCode(pngBytes[pos+4], pngBytes[pos+5], pngBytes[pos+6], pngBytes[pos+7]);
+            if (type === "IEND") {
+              iendIndex = pos;
+              break;
+            }
+            pos += 8 + len + 4;
+          }
+          // Insert the new chunk before IEND
+          const newPng = new Uint8Array(pngBytes.length + chunkBuffer.length);
+          newPng.set(pngBytes.slice(0, iendIndex), 0);
+          newPng.set(chunkBuffer, iendIndex);
+          newPng.set(pngBytes.slice(iendIndex), iendIndex + chunkBuffer.length);
+          return uint8ArrayToDataURL(newPng);
+        }
+        // parseMetadata: Extracts metadata from a tEXt chunk with keyword "TilesetMetadata"
+        function parseMetadata(pngDataUrl) {
+          const pngBytes = dataURLToUint8Array(pngDataUrl);
+          let pos = 8;
+          while (pos < pngBytes.length) {
+            const len = (pngBytes[pos] << 24) | (pngBytes[pos+1] << 16) | (pngBytes[pos+2] << 8) | pngBytes[pos+3];
+            const type = String.fromCharCode(pngBytes[pos+4], pngBytes[pos+5], pngBytes[pos+6], pngBytes[pos+7]);
+            if (type === "tEXt") {
+              const textData = pngBytes.slice(pos+8, pos+8+len);
+              const text = new TextDecoder().decode(textData);
+              const parts = text.split("\0");
+              if (parts[0] === "TilesetMetadata") {
+                return parts.slice(1).join("\0");
+              }
+            }
+            pos += 8 + len + 4;
+          }
+          return "";
+        }
+        function downloadDataUrl(dataUrl, filename) {
+          const link = document.createElement("a");
+          link.href = dataUrl;
+          link.download = filename;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        }
       });
     </script>
   </body>
