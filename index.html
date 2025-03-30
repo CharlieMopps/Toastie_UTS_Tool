@@ -302,7 +302,7 @@
             </div>
             <button class="seamlessTypeBtn" data-tile-type="SoutheastCorner">Make Seamless</button>
           </div>
-          <!-- Door (UI remains, but updateRoomPreview() no longer uses Door cells) -->
+          <!-- Door (UI remains for reference if needed) -->
           <div class="tileSection" data-tile-type="Door">
             <h3>Door</h3>
             <div class="tileRow">
@@ -354,7 +354,7 @@
             </div>
             <button class="seamlessTypeBtn" data-tile-type="InnerBottomRight">Make Seamless</button>
           </div>
-          <!-- Pillar -->
+          <!-- Pillar (Central Pillar) -->
           <div class="tileSection" data-tile-type="Pillar">
             <h3>Pillar (Auto‑Composite)</h3>
             <div class="tileRow">
@@ -393,18 +393,9 @@
         <div id="roomPreviewContainer">
           <h2>Room Preview</h2>
           <p>
-            The preview uses a multi‑ring layout.
-            Outer ring uses walls, corners, and doorways.
-            (DoorFrame cells have been replaced with the corresponding corner tiles.)
-            For doorways, inner corner tiles are used:
-            • Top doorway: InnerTopLeft  
-            • Bottom doorway: InnerBottomRight  
-            • Left doorway: InnerBottomLeft  
-            • Right doorway: InnerTopRight  
-            The inner room is a 2×2 square with:
-            (4,4): InnerTopLeft; (4,5): InnerTopRight;
-            (5,4): InnerBottomLeft; (5,5): InnerBottomRight.
-            The Pillar tile (auto‑composite) appears if available.
+            The preview represents a square room with passageways on all four sides.
+            The outer border consists of wall tiles (with an opening in the middle of each side).
+            The inner area is mostly Floor, except for a central 2×2 pillar and an extra composite Pillar example.
           </p>
           <canvas id="roomPreviewCanvas" width="800" height="800"></canvas>
         </div>
@@ -614,56 +605,56 @@
           }
         }
 
-			function applySeamlessTilingForType(tileType) {
-			  if (window.tilesetMetadata[tileType] && window.tilesetMetadata[tileType].variations) {
-				window.tilesetMetadata[tileType].variations.forEach((variant, index) => {
-				  if (variant.imageData) {
-					console.log("Applying seamless tiling to", tileType, "variation", index + 1);
-					applySeamlessTiling(variant.imageData, function(newDataUrl) {
-					  console.log("New seamless image generated for", tileType, "variation", index + 1, ":", newDataUrl);
-					  variant.imageData = newDataUrl;
-					  document.querySelectorAll('.tileCell[data-tile-type="' + tileType + '"][data-variation="' + (index + 1) + '"]').forEach(cell => {
-						cell.innerHTML = '<img src="' + newDataUrl + '" alt="Tile Variant">';
-					  });
-					  updateRoomPreview();
-					});
-				  } else {
-					console.log("No imageData for", tileType, "variation", index + 1);
-				  }
-				});
-			  } else {
-				console.log("No metadata found for tile type:", tileType);
-			  }
-			}
+        function applySeamlessTilingForType(tileType) {
+          if (window.tilesetMetadata[tileType] && window.tilesetMetadata[tileType].variations) {
+            window.tilesetMetadata[tileType].variations.forEach((variant, index) => {
+              if (variant.imageData) {
+                console.log("Make Seamless clicked for", tileType, "variation", index + 1);
+                applySeamlessTiling(variant.imageData, function(newDataUrl) {
+                  console.log("New seamless image generated for", tileType, "variation", index + 1);
+                  variant.imageData = newDataUrl;
+                  document.querySelectorAll('.tileCell[data-tile-type="' + tileType + '"][data-variation="' + (index + 1) + '"]').forEach(cell => {
+                    cell.innerHTML = '<img src="' + newDataUrl + '" alt="Tile Variant">';
+                  });
+                  updateRoomPreview();
+                });
+              } else {
+                console.log("No imageData for", tileType, "variation", index + 1);
+              }
+            });
+          } else {
+            console.log("No metadata found for tile type:", tileType);
+          }
+        }
 
-function applySeamlessTiling(imageDataUrl, callback) {
-  const img = new Image();
-  img.src = imageDataUrl;
-  img.onload = function() {
-    const w = img.naturalWidth;
-    const h = img.naturalHeight;
-    const offCanvas = document.createElement('canvas');
-    offCanvas.width = w * 3;
-    offCanvas.height = h * 3;
-    const offCtx = offCanvas.getContext('2d');
-    for (let i = 0; i < 3; i++) {
-      for (let j = 0; j < 3; j++) {
-        offCtx.drawImage(img, i * w, j * h, w, h);
-      }
-    }
-    const finalCanvas = document.createElement('canvas');
-    finalCanvas.width = w;
-    finalCanvas.height = h;
-    const finalCtx = finalCanvas.getContext('2d');
-    finalCtx.drawImage(offCanvas, w, h, w, h, 0, 0, w, h);
-    const newDataUrl = finalCanvas.toDataURL('image/png');
-    console.log("applySeamlessTiling callback returning new image data.");
-    callback(newDataUrl);
-  };
-  img.onerror = function(e) {
-    console.error("Error loading image in applySeamlessTiling:", e);
-  };
-}
+        function applySeamlessTiling(imageDataUrl, callback) {
+          const img = new Image();
+          img.src = imageDataUrl;
+          img.onload = function() {
+            const w = img.naturalWidth;
+            const h = img.naturalHeight;
+            const offCanvas = document.createElement('canvas');
+            offCanvas.width = w * 3;
+            offCanvas.height = h * 3;
+            const offCtx = offCanvas.getContext('2d');
+            for (let i = 0; i < 3; i++) {
+              for (let j = 0; j < 3; j++) {
+                offCtx.drawImage(img, i * w, j * h, w, h);
+              }
+            }
+            const finalCanvas = document.createElement('canvas');
+            finalCanvas.width = w;
+            finalCanvas.height = h;
+            const finalCtx = finalCanvas.getContext('2d');
+            finalCtx.drawImage(offCanvas, w, h, w, h, 0, 0, w, h);
+            const newDataUrl = finalCanvas.toDataURL('image/png');
+            console.log("applySeamlessTiling: returning new image data");
+            callback(newDataUrl);
+          };
+          img.onerror = function(e) {
+            console.error("Error in applySeamlessTiling:", e);
+          };
+        }
 
         function drawCheckeredBackground(ctx, width, height, tileSize) {
           const lightColor = "#555";
@@ -726,6 +717,10 @@ function applySeamlessTiling(imageDataUrl, callback) {
           drawQuarter(bottomRight, defaultSize.width - halfW, defaultSize.height - halfH, halfW, halfH, halfW, halfH, halfW, halfH, done);
         }
 
+        // Updated Room Preview Layout:
+        // Outer ring: wall tiles with openings in the middle of each side (using Floor).
+        // Inner region: Floor except central 2x2 are Pillar.
+        // Extra composite Pillar example forced in cell (7,7).
         function updateRoomPreview() {
           if (!roomPreviewCanvas) return;
           const ctx = roomPreviewCanvas.getContext('2d');
@@ -738,42 +733,25 @@ function applySeamlessTiling(imageDataUrl, callback) {
           
           for (let r = 0; r < gridSize; r++) {
             for (let c = 0; c < gridSize; c++) {
-              let tileType = "Floor";
-              if (r === 0) {
-                if (c === 0) tileType = "NorthwestCorner";
-                else if (c === gridSize - 1) tileType = "NortheastCorner";
-                // For top door, use an inner corner instead of a "Door" tile:
-                else if (c === Math.floor(gridSize / 2)) tileType = "InnerTopLeft";
-                else if (c === Math.floor(gridSize / 2) - 1) tileType = "NorthwestCorner";
-                else if (c === Math.floor(gridSize / 2) + 1) tileType = "NortheastCorner";
-                else tileType = "NorthWall";
-              } else if (r === gridSize - 1) {
-                if (c === 0) tileType = "SouthwestCorner";
-                else if (c === gridSize - 1) tileType = "SoutheastCorner";
-                // For bottom door, use an inner corner:
-                else if (c === Math.floor(gridSize / 2)) tileType = "InnerBottomRight";
-                else if (c === Math.floor(gridSize / 2) - 1) tileType = "SouthwestCorner";
-                else if (c === Math.floor(gridSize / 2) + 1) tileType = "SoutheastCorner";
-                else tileType = "SouthWall";
-              } else if (c === 0) {
-                // For left door, use an inner corner:
-                if (r === Math.floor(gridSize / 2)) tileType = "InnerBottomLeft";
-                else if (r === Math.floor(gridSize / 2) - 1) tileType = "NorthwestCorner";
-                else if (r === Math.floor(gridSize / 2) + 1) tileType = "SouthwestCorner";
-                else tileType = "WestWall";
-              } else if (c === gridSize - 1) {
-                // For right door, use an inner corner:
-                if (r === Math.floor(gridSize / 2)) tileType = "InnerTopRight";
-                else if (r === Math.floor(gridSize / 2) - 1) tileType = "NortheastCorner";
-                else if (r === Math.floor(gridSize / 2) + 1) tileType = "SoutheastCorner";
-                else tileType = "EastWall";
-              } else if (r >= 4 && r <= 5 && c >= 4 && c <= 5) {
-                if (r === 4 && c === 4) tileType = "InnerTopLeft";
-                else if (r === 4 && c === 5) tileType = "InnerTopRight";
-                else if (r === 5 && c === 4) tileType = "InnerBottomLeft";
-                else if (r === 5 && c === 5) tileType = "InnerBottomRight";
+              let tileType;
+              // Outer ring: walls with an opening (Floor) in the center of each side.
+              if (r === 0) { // top row
+                tileType = (c === 4) ? "Floor" : "NorthWall";
+              } else if (r === gridSize - 1) { // bottom row
+                tileType = (c === 4) ? "Floor" : "SouthWall";
+              } else if (c === 0) { // left column
+                tileType = (r === 4) ? "Floor" : "WestWall";
+              } else if (c === gridSize - 1) { // right column
+                tileType = (r === 4) ? "Floor" : "EastWall";
               } else {
-                tileType = "Floor";
+                // Inner region: central 2x2 are Pillar; extra Pillar example at (7,7); rest are Floor.
+                if (r >= 4 && r <= 5 && c >= 4 && c <= 5) {
+                  tileType = "Pillar";
+                } else if (r === 7 && c === 7) {
+                  tileType = "Pillar";
+                } else {
+                  tileType = "Floor";
+                }
               }
               let variants = window.tilesetMetadata[tileType]?.variations;
               let variant = null;
@@ -844,12 +822,11 @@ function applySeamlessTiling(imageDataUrl, callback) {
             container.appendChild(seamlessBtn);
             section.appendChild(container);
             tileSelector.appendChild(section);
-				seamlessBtn.addEventListener('click', function(e) {
-				  e.stopPropagation();
-				  console.log("Make Seamless button clicked for tile type:", newType);
-				  applySeamlessTilingForType(newType);
-				});
-
+            seamlessBtn.addEventListener('click', function(e) {
+              e.stopPropagation();
+              console.log("Make Seamless button clicked for tile type:", newType);
+              applySeamlessTilingForType(newType);
+            });
           }
         });
       });
