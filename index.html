@@ -3,12 +3,6 @@
   <head>
     <meta charset="UTF-8" />
     <title>Toastie UTS Tool</title>
-    <!-- 
-      Using rpg-name-generator from unpkg:
-      https://www.npmjs.com/package/rpg-name-generator
-      (c) Open source under MIT license.
-    -->
-    <script src="https://unpkg.com/rpg-name-generator@1.0.2/dist/rpg-name-generator.min.js"></script>
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css"
@@ -274,7 +268,7 @@
       <div id="leftColumn">
         <div id="tileSelector">
           <h2>Tile Variants</h2>
-          <!-- All tile sections -->
+          <!-- All tile sections are included -->
           <!-- Floor -->
           <div class="tileSection" data-tile-type="Floor">
             <h3>Floor</h3>
@@ -647,21 +641,16 @@
 
         const INITIAL_AUTO_CROP_AREA = 0.085;
 
-        // Generate a random tileset name using rpg-name-generator.
-        function generateRandomTilesetName() {
-          if (typeof rpgNameGenerator !== "undefined" && typeof rpgNameGenerator.generate === "function") {
-            // Use a random seed for each call.
-            const seed = Math.random().toString(36).substring(2, 10);
-            const name = rpgNameGenerator.generate({ seed: seed });
-            return name;
-          }
-          return "Dungeon of Doom";
+        // Generate default tileset name: "MyDungeon_" plus a random 6-digit number.
+        function generateDefaultTilesetName() {
+          const randomNumber = Math.floor(100000 + Math.random() * 900000);
+          return "MyDungeon_" + randomNumber;
         }
         // Pre-populate the tileset name field on page load.
-        tilesetNameInput.value = generateRandomTilesetName();
-        // When the "Random Name" button is clicked, generate and set a new name.
+        tilesetNameInput.value = generateDefaultTilesetName();
+        // When the "Random Name" button is clicked, generate and set a new default name.
         randomNameBtn.addEventListener('click', function() {
-          tilesetNameInput.value = generateRandomTilesetName();
+          tilesetNameInput.value = generateDefaultTilesetName();
         });
 
         sampleImagesSelect.addEventListener('change', function() {
