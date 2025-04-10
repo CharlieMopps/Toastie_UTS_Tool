@@ -865,107 +865,77 @@
         }
 
         // Room Preview Layout (unchanged)
-        function updateRoomPreview() {
-          if (!roomPreviewCanvas) return;
-          const ctx = roomPreviewCanvas.getContext('2d');
-          const gridSize = 9;
-          const tileSize = window.defaultTileSizes["Floor"] ? window.defaultTileSizes["Floor"].width : 80;
-          roomPreviewCanvas.width = gridSize * tileSize;
-          roomPreviewCanvas.height = gridSize * tileSize;
-          ctx.clearRect(0, 0, roomPreviewCanvas.width, roomPreviewCanvas.height);
-          drawCheckeredBackground(ctx, roomPreviewCanvas.width, roomPreviewCanvas.height, tileSize);
-          
-          for (let r = 0; r < gridSize; r++) {
-            for (let c = 0; c < gridSize; c++) {
-              let tileType;
-              if (r === 0) { // top row
-                if (c === 0) {
-                  tileType = "NorthwestCorner";
-                } else if (c === gridSize - 1) {
-                  tileType = "NortheastCorner";
-                } else if (c >= 3 && c <= 5) { // top passageway
-                  if (c === 3) tileType = "InnerBottomRight";
-                  else if (c === 5) tileType = "InnerBottomLeft";
-                  else tileType = "Floor";
-                } else {
-                  tileType = "NorthWall";
-                }
-              } else if (r === gridSize - 1) { // bottom row
-                if (c === 0) {
-                  tileType = "SouthwestCorner";
-                } else if (c === gridSize - 1) {
-                  tileType = "SoutheastCorner";
-                } else if (c >= 3 && c <= 5) { // bottom passageway
-                  if (c === 3) tileType = "InnerTopRight";
-                  else if (c === 5) tileType = "InnerTopLeft";
-                  else tileType = "Floor";
-                } else {
-                  tileType = "SouthWall";
-                }
-              } else if (c === 0) { // left column
-                if (r === 0 || r === gridSize - 1) {
-                  tileType = undefined;
-                } else if (r >= 3 && r <= 5) { // left passageway
-                  if (r === 3) tileType = "InnerBottomRight";
-                  else if (r === 5) tileType = "InnerTopRight";
-                  else tileType = "Floor";
-                } else {
-                  tileType = "WestWall";
-                }
-              } else if (c === gridSize - 1) { // right column
-                if (r === 0 || r === gridSize - 1) {
-                  tileType = undefined;
-                } else if (r >= 3 && r <= 5) { // right passageway
-                  if (r === 3) tileType = "InnerBottomLeft";
-                  else if (r === 5) tileType = "InnerTopLeft";
-                  else tileType = "Floor";
-                } else {
-                  tileType = "EastWall";
-                }
-              } else {
-                // Inner region
-                if (r === 4 && c === 4) {
-                  tileType = "InnerTopLeft";
-                } else if (r === 4 && c === 5) {
-                  tileType = "InnerTopRight";
-                } else if (r === 5 && c === 4) {
-                  tileType = "InnerBottomLeft";
-                } else if (r === 5 && c === 5) {
-                  tileType = "InnerBottomRight";
-                } else if (r === 7 && c === 7) {
-                  tileType = "Pillar";
-                } else {
-                  tileType = "Floor";
-                }
-              }
-              if (!tileType) continue;
-              
-              let variants = window.tilesetMetadata[tileType]?.variations;
-              let variant = null;
-              if (variants && variants.length > 0) {
-                variant = variants[Math.floor(Math.random() * variants.length)].imageData;
-              }
-              if (!variant && tileType !== "Floor" && window.tilesetMetadata["Floor"]?.variations?.length > 0) {
-                variant = window.tilesetMetadata["Floor"].variations[0].imageData;
-              }
-              const x = c * tileSize;
-              const y = r * tileSize;
-              if (variant) {
-                const img = new Image();
-                img.src = variant;
-                img.onload = (function(x, y) {
-                  return function() {
-                    ctx.drawImage(this, x, y, tileSize, tileSize);
-                  };
-                })(x, y);
-              } else {
-                ctx.fillStyle = "rgba(255,255,255,0.5)";
-                ctx.font = "12px Segoe UI";
-                ctx.fillText(tileType, x + 5, y + 15);
-              }
+      function updateRoomPreview() {
+        const canvas = document.getElementById("roomPreviewCanvas");
+        if (!canvas) {
+          console.error("updateRoomPreview: roomPreviewCanvas not found.");
+          return;
+        }
+        const ctx = canvas.getContext("2d");
+        const gridSize = 9;
+        // Use window.defaultTileSizes if defined; fallback to 80.
+        const baseTileSize = (window.defaultTileSizes &&
+          window.defaultTileSizes["Floor"] &&
+          window.defaultTileSizes["Floor"].width) || 80;
+      
+        // Use the sample image's width as the desired preview size.
+        const sampleImg = document.getElementById("imagePreview");
+        const desiredPreviewSize = sampleImg ? sampleImg.clientWidth : 600;
+      
+        canvas.width = desiredPreviewSize;
+        canvas.height = desiredPreviewSize;
+      
+        const scale = desiredPreviewSize / (gridSize * baseTileSize);
+      
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.save();
+        ctx.scale(scale, scale);
+      
+        // Loop through grid cells.
+        for (let r = 0; r < gridSize; r++) {
+          for (let c = 0; c < gridSize; c++) {
+            let tileType;
+            if (r === 0) {
+              if (c === 0) tileType = "NorthwestCorner";
+              else if (c === gridSize - 1) tileType = "NortheastCorner";
+              else tileType = "NorthWall";
+            } else if (r === gridSize - 1) {
+              if (c === 0) tileType = "SouthwestCorner";
+              else if (c === gridSize - 1) tileType = "SoutheastCorner";
+              else tileType = "SouthWall";
+            } else if (c === 0) {
+              tileType = "WestWall";
+            } else if (c === gridSize - 1) {
+              tileType = "EastWall";
+            } else {
+              tileType = "Floor";
+            }
+      
+            let variants = (window.tilesetMetadata &&
+              window.tilesetMetadata[tileType] &&
+              window.tilesetMetadata[tileType].variations) || [];
+      
+            let variant = variants.length > 0 ? variants[Math.floor(Math.random() * variants.length)].imageData : null;
+            const x = c * baseTileSize;
+            const y = r * baseTileSize;
+            if (variant) {
+              const img = new Image();
+              img.src = variant;
+              img.onload = () => {
+                ctx.drawImage(img, x, y, baseTileSize, baseTileSize);
+              };
+              img.onerror = () => {
+                ctx.fillStyle = "rgba(102,102,102,0.5)";
+                ctx.fillRect(x, y, baseTileSize, baseTileSize);
+              };
+            } else {
+              ctx.fillStyle = "rgba(102,102,102,0.5)";
+              ctx.fillRect(x, y, baseTileSize, baseTileSize);
             }
           }
         }
+        ctx.restore();
+      }
 
         document.addEventListener('click', function(e) {
           if (cropper && !e.target.closest('#imagePreviewContainer') && !e.target.closest('.tileCell')) {
@@ -1122,4 +1092,5 @@
       });
     </script>
   </body>
+</html>
 </html>
